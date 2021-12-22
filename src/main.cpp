@@ -20,6 +20,9 @@ Adafruit_INA260 ina260_2 = Adafruit_INA260();
 Adafruit_INA260 ina260_3 = Adafruit_INA260();
 
 
+
+#define led_esp 2
+
 #define RETRY_INTERVAL 5000
 #define SEND_INTERVAL 1000 
 #define N 10 // nombre de tags // il faut initialiser les valeurs du tableau winnerRSSI[N] par -255  à chaque fois cette valeur est changée 
@@ -57,6 +60,8 @@ void setup() {
   Serial.begin(115200);
   while(!Serial);
   #endif
+
+  pinMode(led_esp,OUTPUT);
   if (!ina260_1.begin(INA260_I2CADDR_1)){
     #ifdef debug
     Serial.println("Couldn't find INA260 chip 1");
@@ -138,6 +143,9 @@ void loop() {
   bus.current=ina260_1.readCurrent();
   Serial.print("current 1 =");Serial.println(bus.current);
   bus.voltage=ina260_1.readBusVoltage();
+  if(bus.voltage>7){
+    digitalWrite(led_esp,HIGH);
+  }
   Serial.print("Voltage 1 =");Serial.println(bus.voltage);
   bus.power=ina260_1.readPower();
   Serial.print("Power 1 =");Serial.println(bus.power);Serial.println(bus.power);
