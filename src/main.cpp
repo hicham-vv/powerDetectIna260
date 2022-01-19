@@ -11,8 +11,18 @@
 #define INA260_I2CADDR_2 0x40 // INA260 default i2c address 0x40 A1=0/A0=0
 #define INA260_I2CADDR_1 0x44 // INA260 I2c Adress 0x44 A1=1/A0=0
 
+
+
+
 #define debug
-uint8_t receiverMAC[] = {0x9C, 0x9C, 0x1F, 0xD8, 0x22, 0x64}; // TracCar MAC Adress
+#define BusVoltage
+// #define BusCurrent
+// #define BusPower
+
+
+
+uint8_t receiverMAC[] = {0x9C, 0x9C, 0x1F, 0xe1, 0xe9, 0xd0}; // TracCar MAC Adress
+
 
 
 Adafruit_INA260 ina260_1 = Adafruit_INA260();
@@ -34,11 +44,17 @@ unsigned long sentStartTime;
 unsigned long lastSentTime;
 
 typedef struct message {
-int current=0; // initialisation des valeurs winners RSSI 
-int voltage=0; // initialisation des valeurs winners RSSI 
-int power=0; // initialisation des valeurs winners RSSI 
+int PD1=-1; // initialisation des valeurs winners RSSI 
+int PD2=-1; // initialisation des valeurs winners RSSI 
+int PD3=-1; // initialisation des valeurs winners RSSI 
 }message;
 message bus; // créer une structure message nommé bus
+
+
+int voltage=0;
+int current=0;
+int power=0;
+
 
 void sendData() {
   sentStartTime = micros();
@@ -125,31 +141,58 @@ void setup() {
   }
 
 void loop() {
-  bus.current=ina260_2.readCurrent();
-  Serial.print("Current 2 =");Serial.println(bus.current);
-  bus.voltage=ina260_2.readBusVoltage();
-  Serial.print("voltage 2 =");Serial.println(bus.voltage);
-  bus.power=ina260_2.readPower();
-  Serial.print("power 2 =");Serial.println(bus.power);
+  current=ina260_1.readCurrent();
+  Serial.print("Current 1 =");Serial.println(current);
+  voltage=ina260_1.readBusVoltage();
+  Serial.print("voltage 1 =");Serial.println(voltage);
+  power=ina260_1.readPower();
+  Serial.print("power 1 =");Serial.println(power);
 
-  bus.current=ina260_3.readCurrent();
-  Serial.print("Current 3 =");Serial.println(bus.current);
-  bus.voltage=ina260_3.readBusVoltage();
-  Serial.print("voltage 3 =");Serial.println(bus.voltage);
-  bus.power=ina260_3.readPower();
-  Serial.print("Power 3 =");Serial.println(bus.power);
+  #ifdef BusVoltage
+  bus.PD1=voltage;
+  #endif
+  #ifdef BusCurrent
+  bus.PD1=current;
+  #endif
+  #ifdef BusPower
+  bus.PD1=power;
+  #endif
+
+  current=ina260_2.readCurrent();
+  Serial.print("Current 2 =");Serial.println(current);
+  voltage=ina260_2.readBusVoltage();
+  Serial.print("voltage 2 =");Serial.println(voltage);
+  power=ina260_2.readPower();
+  Serial.print("power 2 =");Serial.println(power);
+
+  #ifdef BusVoltage
+  bus.PD2=voltage;
+  #endif
+  #ifdef BusCurrent
+  bus.PD2=current;
+  #endif
+  #ifdef BusPower
+  bus.PD2=power;
+  #endif
 
 
-  bus.current=ina260_1.readCurrent();
-  Serial.print("current 1 =");Serial.println(bus.current);
-  bus.voltage=ina260_1.readBusVoltage();
-  if(bus.voltage>7){
-    digitalWrite(led_esp,HIGH);
-  }
-  Serial.print("Voltage 1 =");Serial.println(bus.voltage);
-  bus.power=ina260_1.readPower();
-  Serial.print("Power 1 =");Serial.println(bus.power);Serial.println(bus.power);
+  current=ina260_3.readCurrent();
+  Serial.print("Current 3 =");Serial.println(current);
+  voltage=ina260_3.readBusVoltage();
+  Serial.print("voltage 3 =");Serial.println(voltage);
+  power=ina260_3.readPower();
+  Serial.print("power 3 =");Serial.println(power);
 
-  // sendData();
+  #ifdef BusVoltage
+  bus.PD3=voltage;
+  #endif
+  #ifdef BusCurrent
+  bus.PD3=current;
+  #endif
+  #ifdef BusPower
+  bus.PD3=power;
+  #endif
+
+  sendData();
   delay(5000);
 }
