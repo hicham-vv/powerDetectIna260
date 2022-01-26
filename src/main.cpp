@@ -44,9 +44,12 @@ unsigned long sentStartTime;
 unsigned long lastSentTime;
 
 typedef struct message {
-int PD1=-1; // initialisation des valeurs winners RSSI 
-int PD2=-1; // initialisation des valeurs winners RSSI 
-int PD3=-1; // initialisation des valeurs winners RSSI 
+int PD1=-1; 
+int PD2=-1; 
+int PD3=-1; 
+int TotalDistance = -1;
+int FuelTank = -1;
+int TotalHours = -1;
 }message;
 message bus; // créer une structure message nommé bus
 
