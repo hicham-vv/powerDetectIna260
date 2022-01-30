@@ -16,12 +16,12 @@
 
 #define debug
 #define BusVoltage
-// #define BusCurrent
-// #define BusPower
 
 
 
-uint8_t receiverMAC[] = {0x9C, 0x9C, 0x1F, 0xe1, 0xe9, 0xd0}; // TracCar MAC Adress
+uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x6d, 0xec}; // TracCar MAC Adress
+
+// 4c:11:ae:9d:6d:ec
 
 
 
@@ -44,9 +44,9 @@ unsigned long sentStartTime;
 unsigned long lastSentTime;
 
 typedef struct message {
-int PD1=-1; 
-int PD2=-1; 
-int PD3=-1; 
+char PD1='0'; 
+char PD2='0'; 
+char PD3='0'; 
 int TotalDistance = -1;
 int FuelTank = -1;
 int TotalHours = -1;
@@ -151,8 +151,14 @@ void loop() {
   power=ina260_1.readPower();
   Serial.print("power 1 =");Serial.println(power);
 
+  voltage=voltage/1000;
+
   #ifdef BusVoltage
-  bus.PD1=voltage/1000;
+  if(voltage>=10){
+    bus.PD1='1';
+  }else{
+    bus.PD1='0';
+  }
   #endif
   #ifdef BusCurrent
   bus.PD1=current;
@@ -168,8 +174,14 @@ void loop() {
   power=ina260_2.readPower();
   Serial.print("power 2 =");Serial.println(power);
 
+  voltage=voltage/1000;
+
   #ifdef BusVoltage
-  bus.PD2=voltage/1000;
+  if(voltage>=10){
+    bus.PD2='1';
+  }else{
+    bus.PD2='0';
+  }
   #endif
   #ifdef BusCurrent
   bus.PD2=current;
@@ -186,8 +198,14 @@ void loop() {
   power=ina260_3.readPower();
   Serial.print("power 3 =");Serial.println(power);
 
+  voltage=voltage/1000;
+
   #ifdef BusVoltage
-  bus.PD3=voltage/1000;
+  if(voltage>=10){
+    bus.PD3='1';
+  }else{
+    bus.PD3='0';
+  }
   #endif
   #ifdef BusCurrent
   bus.PD3=current;
