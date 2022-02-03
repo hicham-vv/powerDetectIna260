@@ -17,6 +17,7 @@
 #define debug
 #define BusVoltage
 
+// #define CiterneMAN  // Pour les Citernes MAN de Tanger
 
 
 uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x6d, 0xec}; // TracCar MAC Adress
@@ -37,6 +38,8 @@ Adafruit_INA260 ina260_3 = Adafruit_INA260();
 #define SEND_INTERVAL 1000 
 #define N 10 // nombre de tags // il faut initialiser les valeurs du tableau winnerRSSI[N] par -255  à chaque fois cette valeur est changée 
 
+#define TensionSeuil 6
+
 unsigned long previousMillis;
 unsigned long currentMillis;
 
@@ -44,7 +47,7 @@ unsigned long sentStartTime;
 unsigned long lastSentTime;
 
 typedef struct message {
-char PD1='0'; 
+char PD1='0';
 char PD2='0'; 
 char PD3='0'; 
 int TotalDistance = -1;
@@ -154,7 +157,7 @@ void loop() {
   voltage=voltage/1000;
 
   #ifdef BusVoltage
-  if(voltage>=10){
+  if(voltage>=TensionSeuil){
     bus.PD1='1';
   }else{
     bus.PD1='0';
@@ -177,7 +180,7 @@ void loop() {
   voltage=voltage/1000;
 
   #ifdef BusVoltage
-  if(voltage>=10){
+  if(voltage>=TensionSeuil){
     bus.PD2='1';
   }else{
     bus.PD2='0';
@@ -201,7 +204,7 @@ void loop() {
   voltage=voltage/1000;
 
   #ifdef BusVoltage
-  if(voltage>=10){
+  if(voltage>=TensionSeuil){
     bus.PD3='1';
   }else{
     bus.PD3='0';
@@ -212,6 +215,15 @@ void loop() {
   #endif
   #ifdef BusPower
   bus.PD3=power;
+  #endif
+
+
+  #ifdef CiterneMAN
+  if(bus.PD3=='1'){
+    bus.PD2='0';
+  }else{
+    bus.PD2='1';
+  }
   #endif
 
   sendData();
