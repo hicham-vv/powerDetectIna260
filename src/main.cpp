@@ -17,10 +17,18 @@
 #define debug
 #define BusVoltage
 
+
+
+
 // #define CiterneMAN  // Pour les Citernes MAN de Tanger
 
+#define MicroBalayeuse
 
-uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x6d, 0xec}; // TracCar MAC Adress
+
+uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x68, 0xec}; // TracCar MAC Adress
+
+
+
 
 // 4c:11:ae:9d:6d:ec
 
@@ -228,4 +236,7 @@ void loop() {
 
   sendData();
   delay(5000);
+  #ifdef MicroBalayeuse
+  delay(15000);
+  #endif
 }
