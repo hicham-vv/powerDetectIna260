@@ -92,6 +92,9 @@ void setup() {
   #endif
 
   pinMode(led_esp,OUTPUT);
+
+  #ifndef MicroBalayeuse
+
   if (!ina260_1.begin(INA260_I2CADDR_1)){
     #ifdef debug
     Serial.println("Couldn't find INA260 chip 1");
@@ -125,6 +128,8 @@ void setup() {
     Serial.println("Found INA260 chip 3");
     #endif
   }
+
+  #endif
   
 
   WiFi.mode(WIFI_STA); // set the wifi mode as Station
@@ -155,6 +160,9 @@ void setup() {
   }
 
 void loop() {
+
+  #ifndef MicroBalayeuse
+
   current=ina260_1.readCurrent();
   Serial.print("Current 1 =");Serial.println(current);
   voltage=ina260_1.readBusVoltage();
@@ -233,6 +241,15 @@ void loop() {
     bus.PD2='1';
   }
   #endif
+  #endif
+  #ifdef MicroBalayeuse
+
+  bus.PD1='0';
+  bus.PD2='1';
+  bus.PD3='1';
+
+  #endif
+
 
   sendData();
   delay(5000);
