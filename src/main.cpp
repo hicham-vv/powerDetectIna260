@@ -22,10 +22,10 @@
 
 // #define CiterneMAN  // Pour les Citernes MAN de Tanger
 
-#define MicroBalayeuse
+// #define MicroBalayeuse
 
 
-uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x68, 0xec}; // TracCar MAC Adress
+uint8_t receiverMAC[] = {0x3c, 0x71, 0xbf, 0x86, 0x57, 0xa4}; // TracCar MAC Adress
 
 
 
@@ -46,7 +46,7 @@ Adafruit_INA260 ina260_3 = Adafruit_INA260();
 #define SEND_INTERVAL 1000 
 #define N 10 // nombre de tags // il faut initialiser les valeurs du tableau winnerRSSI[N] par -255  à chaque fois cette valeur est changée 
 
-#define TensionSeuil 6
+#define TensionSeuil 8
 
 unsigned long previousMillis;
 unsigned long currentMillis;
@@ -61,6 +61,8 @@ char PD3='0';
 int TotalDistance = -1;
 int FuelTank = -1;
 int TotalHours = -1;
+int TotalFuelused =-1;
+int CoolantTemp =-1;
 }message;
 message bus; // créer une structure message nommé bus
 
@@ -93,7 +95,6 @@ void setup() {
 
   pinMode(led_esp,OUTPUT);
 
-  #ifndef MicroBalayeuse
 
   if (!ina260_1.begin(INA260_I2CADDR_1)){
     #ifdef debug
@@ -129,7 +130,7 @@ void setup() {
     #endif
   }
 
-  #endif
+
   
 
   WiFi.mode(WIFI_STA); // set the wifi mode as Station
@@ -161,14 +162,14 @@ void setup() {
 
 void loop() {
 
-  #ifndef MicroBalayeuse
 
-  current=ina260_1.readCurrent();
-  Serial.print("Current 1 =");Serial.println(current);
+
+  // current=ina260_1.readCurrent();
+  // Serial.print("Current 1 =");Serial.println(current);
   voltage=ina260_1.readBusVoltage();
   Serial.print("voltage 1 =");Serial.println(voltage/1000);
-  power=ina260_1.readPower();
-  Serial.print("power 1 =");Serial.println(power);
+  // power=ina260_1.readPower();
+  // Serial.print("power 1 =");Serial.println(power);
 
   voltage=voltage/1000;
 
@@ -186,12 +187,12 @@ void loop() {
   bus.PD1=power;
   #endif
 
-  current=ina260_2.readCurrent();
-  Serial.print("Current 2 =");Serial.println(current);
+  // current=ina260_2.readCurrent();
+  // Serial.print("Current 2 =");Serial.println(current);
   voltage=ina260_2.readBusVoltage();
   Serial.print("voltage 2 =");Serial.println(voltage/1000);
-  power=ina260_2.readPower();
-  Serial.print("power 2 =");Serial.println(power);
+  // power=ina260_2.readPower();
+  // Serial.print("power 2 =");Serial.println(power);
 
   voltage=voltage/1000;
 
@@ -210,12 +211,12 @@ void loop() {
   #endif
 
 
-  current=ina260_3.readCurrent();
-  Serial.print("Current 3 =");Serial.println(current);
+  // current=ina260_3.readCurrent();
+  // Serial.print("Current 3 =");Serial.println(current);
   voltage=ina260_3.readBusVoltage();
   Serial.print("voltage 3 =");Serial.println(voltage/1000);
-  power=ina260_3.readPower();
-  Serial.print("power 3 =");Serial.println(power);
+  // power=ina260_3.readPower();
+  // Serial.print("power 3 =");Serial.println(power);
 
   voltage=voltage/1000;
 
@@ -234,26 +235,6 @@ void loop() {
   #endif
 
 
-  #ifdef CiterneMAN
-  if(bus.PD3=='1'){
-    bus.PD2='0';
-  }else{
-    bus.PD2='1';
-  }
-  #endif
-  #endif
-  #ifdef MicroBalayeuse
-
-  bus.PD1='0';
-  bus.PD2='1';
-  bus.PD3='1';
-
-  #endif
-
-
   sendData();
-  delay(5000);
-  #ifdef MicroBalayeuse
-  delay(15000);
-  #endif
+  delay(10000);
 }
