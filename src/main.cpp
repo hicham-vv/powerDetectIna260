@@ -17,12 +17,10 @@
 #define debug
 #define BusVoltage
 
+#define Citerne  //  Pour les citernes
 
 
 
-// #define CiterneMAN  // Pour les Citernes MAN de Tanger
-
-// #define MicroBalayeuse
 
 
 uint8_t receiverMAC[] = {0x3c, 0x71, 0xbf, 0x86, 0x57, 0xa4}; // TracCar MAC Adress
@@ -92,6 +90,7 @@ void setup() {
   Serial.begin(115200);
   while(!Serial);
   #endif
+  delay(5000);
 
   pinMode(led_esp,OUTPUT);
 
@@ -163,7 +162,7 @@ void setup() {
 void loop() {
 
 
-
+  #ifndef Citerne
   // current=ina260_1.readCurrent();
   // Serial.print("Current 1 =");Serial.println(current);
   voltage=ina260_1.readBusVoltage();
@@ -237,4 +236,55 @@ void loop() {
 
   sendData();
   delay(10000);
+  #endif
+
+  #ifdef Citerne
+  previousMillis=millis();
+
+  int voltage2=ina260_2.readBusVoltage();
+  int voltage3=ina260_3.readBusVoltage();
+  #ifdef debug
+  Serial.print("PD2=");Serial.println(voltage2);
+  Serial.print("PD3=");Serial.println(voltage3);
+  #endif
+  bus.CoolantTemp=voltage3;
+  sendData();
+  while(millis()-previousMillis<300000){
+    voltage2=ina260_2.readBusVoltage();
+    voltage3=ina260_3.readBusVoltage();
+    if(voltage2>3180){
+      #ifdef debug
+      Serial.print("PD2=");Serial.println(voltage2);
+      Serial.print("PD3=");Serial.println(voltage3);
+      #endif
+      bus.PD2='0';
+      bus.CoolantTemp=voltage3;
+      sendData();
+      delay(3000);
+    }
+    if(voltage2>2500 && voltage2 < 2680){
+      #ifdef debug
+      Serial.print("PD2=");Serial.println(voltage2);
+      Serial.print("PD3=");Serial.println(voltage3);
+      #endif
+      bus.PD2='1';
+      bus.CoolantTemp=voltage3;
+      sendData();
+      delay(3000);
+    }
+    if(voltage2<2000 && voltage2>1500 ){
+      #ifdef debug
+      Serial.print("PD2=");Serial.println(voltage2);
+      Serial.print("PD3=");Serial.println(voltage3);
+      #endif
+      bus.PD2='0';
+      bus.CoolantTemp=voltage3;
+      sendData();
+      delay(3000);
+    }
+  }
+
+
+
+  #endif
 }
