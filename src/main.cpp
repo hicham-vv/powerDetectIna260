@@ -240,47 +240,59 @@ void loop() {
 
   #ifdef Citerne
   previousMillis=millis();
-
+  int voltage1=ina260_1.readBusVoltage();
   int voltage2=ina260_2.readBusVoltage();
   int voltage3=ina260_3.readBusVoltage();
   #ifdef debug
+  Serial.print("PD1=");Serial.println(voltage1);
   Serial.print("PD2=");Serial.println(voltage2);
   Serial.print("PD3=");Serial.println(voltage3);
   #endif
+  bus.TotalFuelused=voltage1;
   bus.CoolantTemp=voltage3;
   sendData();
-  while(millis()-previousMillis<300000){
+  bool a=true;
+  while(millis()-previousMillis<180000){
+    voltage1=ina260_1.readBusVoltage();
     voltage2=ina260_2.readBusVoltage();
     voltage3=ina260_3.readBusVoltage();
     if(voltage2>3180){
+      a=true;
       #ifdef debug
+      Serial.print("PD1=");Serial.println(voltage1);
       Serial.print("PD2=");Serial.println(voltage2);
       Serial.print("PD3=");Serial.println(voltage3);
       #endif
       bus.PD2='0';
+      bus.TotalFuelused=voltage1;
       bus.CoolantTemp=voltage3;
       sendData();
-      delay(3000);
+      delay(2000);
     }
     if(voltage2>2500 && voltage2 < 2680){
+      a=true;
       #ifdef debug
+      Serial.print("PD1=");Serial.println(voltage1);
       Serial.print("PD2=");Serial.println(voltage2);
       Serial.print("PD3=");Serial.println(voltage3);
       #endif
       bus.PD2='1';
+      bus.TotalFuelused=voltage1;
       bus.CoolantTemp=voltage3;
       sendData();
-      delay(3000);
+      delay(2000);
     }
-    if(voltage2<2000 && voltage2>1500 ){
+    if(voltage2<1500 && a==true){
+      a=false;
       #ifdef debug
       Serial.print("PD2=");Serial.println(voltage2);
       Serial.print("PD3=");Serial.println(voltage3);
       #endif
       bus.PD2='0';
+      bus.TotalFuelused=voltage1;
       bus.CoolantTemp=voltage3;
       sendData();
-      delay(3000);
+      delay(2000);
     }
   }
 
