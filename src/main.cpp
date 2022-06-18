@@ -17,7 +17,7 @@
 #define debug
 #define BusVoltage
 
-#define Citerne  //  Pour les citernes
+// #define Citerne  //  Pour les citernes
 
 
 
@@ -166,11 +166,11 @@ void loop() {
   // current=ina260_1.readCurrent();
   // Serial.print("Current 1 =");Serial.println(current);
   voltage=ina260_1.readBusVoltage();
-  Serial.print("voltage 1 =");Serial.println(voltage/1000);
+  voltage=voltage/1000;
+  
+  Serial.print("voltage 1 =");Serial.println(voltage);
   // power=ina260_1.readPower();
   // Serial.print("power 1 =");Serial.println(power);
-
-  voltage=voltage/1000;
 
   #ifdef BusVoltage
   if(voltage>=TensionSeuil){
@@ -189,11 +189,12 @@ void loop() {
   // current=ina260_2.readCurrent();
   // Serial.print("Current 2 =");Serial.println(current);
   voltage=ina260_2.readBusVoltage();
-  Serial.print("voltage 2 =");Serial.println(voltage/1000);
+  voltage=voltage/1000;
+  Serial.print("voltage 2 =");Serial.println(voltage);
   // power=ina260_2.readPower();
   // Serial.print("power 2 =");Serial.println(power);
 
-  voltage=voltage/1000;
+  
 
   #ifdef BusVoltage
   if(voltage>=TensionSeuil){
@@ -213,11 +214,12 @@ void loop() {
   // current=ina260_3.readCurrent();
   // Serial.print("Current 3 =");Serial.println(current);
   voltage=ina260_3.readBusVoltage();
-  Serial.print("voltage 3 =");Serial.println(voltage/1000);
+  voltage=voltage/1000;
+
+  Serial.print("voltage 3 =");Serial.println(voltage);
   // power=ina260_3.readPower();
   // Serial.print("power 3 =");Serial.println(power);
 
-  voltage=voltage/1000;
 
   #ifdef BusVoltage
   if(voltage>=TensionSeuil){
