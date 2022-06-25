@@ -20,6 +20,7 @@
 
 
 #define test
+#define LaveuseBrosseuse
 // #define CiterneTanger
 // #define LaveuseBacTanger
 // #define BOM
@@ -533,6 +534,94 @@ void loop() {
   //   }
   // }
   // #endif
+  #ifdef LaveuseBrosseuse
+
+  uint8_t compteur=0;
+  for(int i=0;i<10;i++){
+    voltage=ina260_1.readBusVoltage();
+    voltage=voltage/1000;
+    if(voltage>TensionSeuil){
+      compteur++;
+    }
+  }
+
+  if(compteur>6){
+    bus.PD1='1';
+    #ifdef debug
+    Serial.print("Port 1 ON");
+    #endif
+  }else{
+    #ifdef debug
+    Serial.print("Port 1 OFF");
+    #endif
+    bus.PD1='0';
+  }
+
+
+  compteur=0;
+  for(int i=0;i<10;i++){
+    voltage=ina260_2.readBusVoltage();
+    voltage=voltage/1000;
+    if(voltage>TensionSeuil){
+      compteur++;
+    }
+  }
+  if(compteur>6){
+    bus.PD2='1';
+    #ifdef debug
+    Serial.print("Port 2 ON");
+    #endif
+  }else{
+    bus.PD2='0';
+    #ifdef debug
+    Serial.print("Port 2 OFF");
+    #endif
+  }
+
+
+  compteur=0;
+  for(int i=0;i<10;i++){
+    voltage=ina260_3.readBusVoltage();
+    voltage=voltage/1000;
+    if(voltage>TensionSeuil){
+      compteur++;
+    }
+  }
+  if(compteur>6){
+    bus.PD3='1';
+    Serial.print("Port 3 ON");
+
+  }else{
+    bus.PD3='0';
+    Serial.print("Port 3 OFF");
+  }
+
+  if(refPD1!=bus.PD1){
+    refPD1=bus.PD1;
+    send=true;
+  }
+  if(refPD2!=bus.PD2){
+    refPD2=bus.PD2;
+    send=true;
+  }
+  if(refPD3!=bus.PD3){
+    refPD3=bus.PD3;
+    send=true;
+  }
+  if(send){
+    send=false;
+    for(int i=0;i<3;i++){
+      sendData();
+      // delay(7000);
+      if(SendOK){
+        blinkLed(500,25);
+        break;
+      }
+    }
+  }
+  delay(5000);
+  #endif
+
   #ifdef test
   int voltage1=ina260_1.readBusVoltage();
   Serial.print("Port1=");Serial.println(voltage1);
