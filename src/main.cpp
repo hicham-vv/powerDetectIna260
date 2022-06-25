@@ -19,12 +19,9 @@
 #define BusVoltage
 
 
-#define test 
-
-
-
+#define test
 // #define CiterneTanger
-#define LaveuseBacTanger
+// #define LaveuseBacTanger
 // #define BOM
 
 
@@ -32,7 +29,7 @@
 
 
 
-uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9b,0xb3,0xdc}; // TracCar MAC Adress 4c:11:ae:9b:b3:dc
+uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9d,0x6e,0x44}; // TracCar MAC Adress 4c:11:ae:9d:6e:44
 bool SendOK=false;
 
 
@@ -50,7 +47,7 @@ boolean ledState = false;
 #define SEND_INTERVAL 1000 
 #define N 10 // nombre de tags // il faut initialiser les valeurs du tableau winnerRSSI[N] par -255  à chaque fois cette valeur est changée 
 
-#define TensionSeuil 8
+#define TensionSeuil 10
 
 unsigned long previousMillis;
 unsigned long currentMillis;
@@ -203,13 +200,13 @@ void loop() {
   int waterlv=0;
   int Mwaterlv=0;
 
-  for(int i=0;i<10;i++){
+  for(int i=0;i<8;i++){
     karsher=ina260_1.readBusVoltage();
     if(karsher>1700 && karsher<1900 ){
       compteur++;
     }
   }
-  if(compteur>6){
+  if(compteur>4){
     Serial.println("Karsher ON");
     bus.PD1='1';
   }else{
@@ -217,8 +214,7 @@ void loop() {
     bus.PD1='0';
   }
   compteur=0;
-
-  for(int i=0;i<10;i++){
+  for(int i=0;i<8;i++){
     LavageBac=ina260_2.readBusVoltage();
     LavageBac=LavageBac/1000;
     Serial.print(LavageBac);Serial.print("*");
@@ -226,7 +222,7 @@ void loop() {
       compteur++;
     }
   }
-  if(compteur>6){
+  if(compteur>4){
     Serial.println("Lavage de BAC ON");
     bus.PD2='1';
   }else{
@@ -235,7 +231,7 @@ void loop() {
   }
   LavageBac=ina260_2.readBusVoltage();
   unsigned long prevms=millis();
-  while(LavageBac>14 && (millis()-prevms<15000)){
+  while((LavageBac>TensionSeuil) && ((millis()-prevms)<15000)){
     LavageBac=ina260_2.readBusVoltage();
   }
 
@@ -253,7 +249,6 @@ void loop() {
   Mwaterlv=Mwaterlv/comp;
   // Serial.print("Moyenne=");Serial.println(Mwaterlv);
   Mwaterlv=Mwaterlv*1500;
-  Serial.println(Mwaterlv);
   Mwaterlv=Mwaterlv/5000;
   Mwaterlv=Mwaterlv+600;
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
@@ -279,9 +274,13 @@ void loop() {
     for(int i=0;i<3;i++){
       #ifdef debug
       Serial.println("Done");
+      Serial.print(bus.PD1);
+      Serial.print(bus.PD2);
+      Serial.print("*");
+      Serial.print(bus.CoolantTemp);
       #endif
       sendData();
-      // delay(500);
+      // delay(7000);
       if(SendOK){
         blinkLed(500,25);
         break;
@@ -291,7 +290,7 @@ void loop() {
       // }
     }
   }
-  delay(500);
+  delay(100);
 
   #endif
 
@@ -408,15 +407,21 @@ void loop() {
     }
   }
 
-  if(compteur>7){
+  if(compteur>6){
     bus.PD1='1';
+    #ifdef debug
+    Serial.print("Levée de la porte arrière ON");
+    #endif
   }else{
+    #ifdef debug
+    Serial.print("Levée de la porte arrière OFF");
+    #endif
     bus.PD1='0';
   }
-  Serial.println(bus.PD1);
+
 
   compteur=0;
-  for(int i=0;i<5;i++){
+  for(int i=0;i<10;i++){
     voltage=ina260_2.readBusVoltage();
     voltage=voltage/1000;
     if(voltage>TensionSeuil){
@@ -425,11 +430,15 @@ void loop() {
   }
   if(compteur>2){
     bus.PD2='1';
+    #ifdef debug
+    Serial.print("Levée du Bac ON");
+    #endif
   }else{
     bus.PD2='0';
+    #ifdef debug
+    Serial.print("Levée du Bac OFF");
+    #endif
   }
-
-  Serial.println(bus.PD2);
 
 
   compteur=0;
@@ -442,85 +451,96 @@ void loop() {
   }
   if(compteur>7){
     bus.PD3='1';
+    Serial.print("Cycle LC ON");
+
   }else{
     bus.PD3='0';
+    Serial.print("Cycle LC OFF");
   }
 
-  Serial.println(bus.PD3);
-
-
-
-
-  sendData();
-  delay(10000);
-  #endif
-
-  #ifdef Citerne
-  previousMillis=millis();
-  int voltage1=ina260_1.readBusVoltage();
-  int voltage2=ina260_2.readBusVoltage();
-  int voltage3=ina260_3.readBusVoltage();
-  #ifdef debug
-  Serial.print("PD1=");Serial.println(voltage1);
-  Serial.print("PD2=");Serial.println(voltage2);
-  Serial.print("PD3=");Serial.println(voltage3);
-  #endif
-  bus.TotalFuelused=voltage1;
-  bus.CoolantTemp=voltage3;
-  sendData();
-  bool a=true;
-  while(millis()-previousMillis<180000){
-    voltage1=ina260_1.readBusVoltage();
-    voltage2=ina260_2.readBusVoltage();
-    voltage3=ina260_3.readBusVoltage();
-    if(voltage2>3180){
-      a=true;
-      #ifdef debug
-      Serial.print("PD1=");Serial.println(voltage1);
-      Serial.print("PD2=");Serial.println(voltage2);
-      Serial.print("PD3=");Serial.println(voltage3);
-      #endif
-      bus.PD2='0';
-      bus.TotalFuelused=voltage1;
-      bus.CoolantTemp=voltage3;
-      sendData();
-      delay(2000);
-    }
-    if(voltage2>2500 && voltage2 < 2680){
-      a=true;
-      #ifdef debug
-      Serial.print("PD1=");Serial.println(voltage1);
-      Serial.print("PD2=");Serial.println(voltage2);
-      Serial.print("PD3=");Serial.println(voltage3);
-      #endif
-      bus.PD2='1';
-      bus.TotalFuelused=voltage1;
-      bus.CoolantTemp=voltage3;
-      sendData();
-      delay(2000);
-    }
-    if(voltage2<1500 && a==true){
-      a=false;
-      #ifdef debug
-      Serial.print("PD2=");Serial.println(voltage2);
-      Serial.print("PD3=");Serial.println(voltage3);
-      #endif
-      bus.PD2='0';
-      bus.TotalFuelused=voltage1;
-      bus.CoolantTemp=voltage3;
-      sendData();
-      delay(2000);
-    }
+  if(refPD1!=bus.PD1){
+    refPD1=bus.PD1;
+    send=true;
   }
+  if(refPD2!=bus.PD2){
+    refPD2=bus.PD2;
+    send=true;
+  }
+  if(refPD3!=bus.PD3){
+    refPD3=bus.PD3;
+    send=true;
+  }
+
+  sendData();
+  delay(2000);
   #endif
+
+  // #ifdef Citerne
+  // previousMillis=millis();
+  // int voltage1=ina260_1.readBusVoltage();
+  // int voltage2=ina260_2.readBusVoltage();
+  // int voltage3=ina260_3.readBusVoltage();
+  // #ifdef debug
+  // Serial.print("PD1=");Serial.println(voltage1);
+  // Serial.print("PD2=");Serial.println(voltage2);
+  // Serial.print("PD3=");Serial.println(voltage3);
+  // #endif
+  // bus.TotalFuelused=voltage1;
+  // bus.CoolantTemp=voltage3;
+  // sendData();
+  // bool a=true;
+  // while(millis()-previousMillis<180000){
+  //   voltage1=ina260_1.readBusVoltage();
+  //   voltage2=ina260_2.readBusVoltage();
+  //   voltage3=ina260_3.readBusVoltage();
+  //   if(voltage2>3180){
+  //     a=true;
+  //     #ifdef debug
+  //     Serial.print("PD1=");Serial.println(voltage1);
+  //     Serial.print("PD2=");Serial.println(voltage2);
+  //     Serial.print("PD3=");Serial.println(voltage3);
+  //     #endif
+  //     bus.PD2='0';
+  //     bus.TotalFuelused=voltage1;
+  //     bus.CoolantTemp=voltage3;
+  //     sendData();
+  //     delay(2000);
+  //   }
+  //   if(voltage2>2500 && voltage2 < 2680){
+  //     a=true;
+  //     #ifdef debug
+  //     Serial.print("PD1=");Serial.println(voltage1);
+  //     Serial.print("PD2=");Serial.println(voltage2);
+  //     Serial.print("PD3=");Serial.println(voltage3);
+  //     #endif
+  //     bus.PD2='1';
+  //     bus.TotalFuelused=voltage1;
+  //     bus.CoolantTemp=voltage3;
+  //     sendData();
+  //     delay(2000);
+  //   }
+  //   if(voltage2<1500 && a==true){
+  //     a=false;
+  //     #ifdef debug
+  //     Serial.print("PD2=");Serial.println(voltage2);
+  //     Serial.print("PD3=");Serial.println(voltage3);
+  //     #endif
+  //     bus.PD2='0';
+  //     bus.TotalFuelused=voltage1;
+  //     bus.CoolantTemp=voltage3;
+  //     sendData();
+  //     delay(2000);
+  //   }
+  // }
+  // #endif
   #ifdef test
   int voltage1=ina260_1.readBusVoltage();
   Serial.print("Port1=");Serial.println(voltage1);
-  // int voltage2=ina260_2.readBusVoltage();
-  // Serial.print("Port2=");Serial.println(voltage2);
-  // int voltage3=ina260_3.readBusVoltage();
-  // Serial.print("Port3=");Serial.println(voltage3);
-  // Serial.println("");
-  // delay(1000);
+  int voltage2=ina260_2.readBusVoltage();
+  Serial.print("Port2=");Serial.println(voltage2);
+  int voltage3=ina260_3.readBusVoltage();
+  Serial.print("Port3=");Serial.println(voltage3);
+  Serial.println("");
+  delay(1000);
   #endif
 }
