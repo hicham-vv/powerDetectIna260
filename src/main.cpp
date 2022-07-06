@@ -6,15 +6,41 @@
   #include <WiFi.h>
 #endif
 
-// #define debug
+// #define test
+
+#define debug
+#define BusVoltage
+
+
+#define PorteArriere
+
+
+
+
+#define TensionSeuil 10
+
 uint8_t receiverMAC[] = {0x9C, 0x9C, 0x1F, 0xD8, 0x22, 0x64}; // TracCar MAC Adress
 
 
-Adafruit_INA260 ina260 = Adafruit_INA260();
+
+
+
+
+Adafruit_INA260 ina260_1 = Adafruit_INA260();
+
+
+
+#define Led_esp 2  
+boolean ledState = false;
 
 #define RETRY_INTERVAL 5000
 #define SEND_INTERVAL 1000 
 #define N 10 // nombre de tags // il faut initialiser les valeurs du tableau winnerRSSI[N] par -255  à chaque fois cette valeur est changée 
+
+
+
+
+
 
 unsigned long previousMillis;
 unsigned long currentMillis;
@@ -23,12 +49,33 @@ unsigned long sentStartTime;
 unsigned long lastSentTime;
 
 typedef struct message {
-int current=0; // initialisation des valeurs winners RSSI 
-int voltage=0; // initialisation des valeurs winners RSSI 
-int power=0; // initialisation des valeurs winners RSSI 
+char PD1='0';
+char PD2='0';
+char PD3='0';
+int TotalDistance = -1;
+int FuelTank = -1;
+int TotalHours = -1;
+int TotalFuelused =-1;
+int CoolantTemp =-1;
 }message;
 message bus; // créer une structure message nommé bus
 
+int voltage=0;
+
+char refPD1='0';
+bool send=false;
+bool SendOK=false;
+
+
+
+void blinkLed(uint16_t time_Out,uint16_t ms){
+  previousMillis=millis();
+  while((millis()-previousMillis)<time_Out){
+    ledState = !ledState;
+    digitalWrite(Led_esp,ledState);
+    delay(ms);
+  }
+}
 void sendData() {
   sentStartTime = micros();
   esp_now_send(receiverMAC,(uint8_t *) &bus, sizeof(bus)); // NULL means send to all peers
@@ -44,7 +91,7 @@ void setup() {
   Serial.begin(115200);
   while(!Serial);
   #endif
-  if (!ina260.begin()){
+  if (!ina260_1.begin()){
     #ifdef debug
     Serial.println("Couldn't find INA260 chip");
     #endif
@@ -63,7 +110,7 @@ void setup() {
     Serial.println("ESP_Now init failed...");
     #endif
     delay(RETRY_INTERVAL);
-    ESP.restart();
+    esp_restart();
   }
 
     // Once ESPNow is successfully Init, we will register for Send CB to
@@ -85,9 +132,45 @@ void setup() {
   }
 
 void loop() {
-  bus.current=ina260.readCurrent();
-  bus.voltage=ina260.readBusVoltage();
-  bus.power=ina260.readPower();
-  sendData();
-  delay(10000);
+
+  #ifdef PorteArriere
+  uint8_t compteur=0;
+  for(int i=0;i<10;i++){
+    voltage=ina260_1.readBusVoltage();
+    voltage=voltage/1000;
+    if(voltage>TensionSeuil){
+      compteur++;
+    }
+    delay(5);
+  }
+
+  if(compteur>5){
+    bus.PD1='1';
+    #ifdef debug
+    Serial.println("Levée de la porte arrière ON");
+    #endif
+  }else{
+    #ifdef debug
+    Serial.println("Levée de la porte arrière OFF");
+    #endif
+    bus.PD1='0';
+  }
+
+  if(refPD1!=bus.PD1){
+    refPD1=bus.PD1;
+    send=true;
+  }
+  if(send){
+    send=false;
+    for(int i=0;i<3;i++){
+      sendData();
+      if(SendOK){
+        blinkLed(500,25);
+        delay(1000);
+        break;
+      }
+    }
+  }
+  delay(3000);
+  #endif
 }
