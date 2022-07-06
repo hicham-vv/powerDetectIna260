@@ -19,7 +19,7 @@
 
 #define TensionSeuil 10
 
-uint8_t receiverMAC[] = {0x9C, 0x9C, 0x1F, 0xD8, 0x22, 0x64}; // TracCar MAC Adress
+uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x6e, 0x6c}; // TracCar MAC Adress 4c:11:ae:9d:6e:6c
 
 
 
@@ -77,14 +77,22 @@ void blinkLed(uint16_t time_Out,uint16_t ms){
   }
 }
 void sendData() {
-  sentStartTime = micros();
   esp_now_send(receiverMAC,(uint8_t *) &bus, sizeof(bus)); // NULL means send to all peers
 }
-
-
 void OnDataSent(const uint8_t *mac, esp_now_send_status_t status) {
-  if(status == ESP_NOW_SEND_SUCCESS){Serial.println("points sents");}
+  if(status == ESP_NOW_SEND_SUCCESS){
+    #ifdef debug
+      Serial.println("points sents");
+    #endif
+    SendOK=true;
+    }else{
+    #ifdef debug
+      Serial.println("points not sents");
+    #endif
+    SendOK=false;
+    }
 }
+
 
 void setup() {
   #ifdef debug
