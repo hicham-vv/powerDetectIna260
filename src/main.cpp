@@ -19,8 +19,10 @@
 #define BusVoltage
 
 
-#define test
-#define LaveuseBrosseuse
+// #define test
+
+#define Laveusecolonne
+// #define BalayeuseMeca
 // #define CiterneTanger
 // #define LaveuseBacTanger
 // #define BOM
@@ -30,7 +32,7 @@
 
 
 
-uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9d,0x6e,0x44}; // TracCar MAC Adress 4c:11:ae:9d:6e:44
+uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9b,0xdb,0x44}; // TracCar MAC Adress 4c:11:ae:9b:db:44
 bool SendOK=false;
 
 
@@ -191,6 +193,112 @@ void setup() {
 void loop() {
 
 
+  #ifdef Laveusecolonne
+
+  
+  uint8_t compteur=0;
+  int VidageSale=0;
+  int LavageBac=0;
+  int waterlv=0;
+  int Mwaterlv=0;
+
+  for(int i=0;i<7;i++){
+    VidageSale=ina260_1.readBusVoltage();
+    VidageSale=VidageSale/1000;
+    Serial.println(VidageSale);
+    if(VidageSale>TensionSeuil){
+      compteur++;
+    }
+  }
+  if(compteur>4){
+    Serial.println("Vidage eau sale On");
+    bus.PD1='1';
+  }else{
+    Serial.println("Vidage eau sale OFF");
+    bus.PD1='0';
+  }
+  compteur=0;
+  // for(int i=0;i<8;i++){
+  //   LavageBac=ina260_2.readBusVoltage();
+  //   LavageBac=LavageBac/1000;
+  //   Serial.print(LavageBac);Serial.print("*");
+  //   if(LavageBac>TensionSeuil){
+  //     compteur++;
+  //   }
+  // }
+  // if(compteur>4){
+  //   Serial.println("Lavage de BAC ON");
+  //   bus.PD2='1';
+  // }else{
+  //   Serial.println("Lavage de BAC OFF");
+  //   bus.PD2='0';
+  // }
+  // LavageBac=ina260_2.readBusVoltage();
+  // unsigned long prevms=millis();
+  // while((LavageBac>TensionSeuil) && ((millis()-prevms)<15000)){
+  //   LavageBac=ina260_2.readBusVoltage();
+  // }
+
+  waterlv=ina260_3.readBusVoltage();
+  Mwaterlv=waterlv;
+  int comp=1;
+  for(int i=0;i<14;i++){
+    waterlv=ina260_3.readBusVoltage();
+    // Serial.println(waterlv);
+    if(waterlv>0 && waterlv<5300){
+      Mwaterlv=Mwaterlv+waterlv;
+      comp++;
+    }
+  }
+  Mwaterlv=Mwaterlv/comp;
+  // Serial.print("Moyenne=");Serial.println(Mwaterlv);
+  Mwaterlv=Mwaterlv*1500;
+  Mwaterlv=Mwaterlv/5000;
+  // Mwaterlv=Mwaterlv+600;
+  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
+
+  bus.CoolantTemp=Mwaterlv;
+  if(refPD1!=bus.PD1){
+    refPD1=bus.PD1;
+    send=true;
+  }
+  if(refPD2!=bus.PD2){
+    refPD2=bus.PD2;
+    send=true;
+  }
+  int deltaLv;
+  deltaLv=Mwaterlv-refWaterLV;
+  if(abs(deltaLv)>200){
+    refWaterLV=Mwaterlv;
+    send=true;
+  }
+
+  if(send){
+    send=false;
+    for(int i=0;i<3;i++){
+      #ifdef debug
+      Serial.println("Done");
+      Serial.print(bus.PD1);
+      // Serial.print(bus.PD2);
+      Serial.print("*");
+      Serial.print(bus.CoolantTemp);
+      #endif
+      sendData();
+      // delay(7000);
+      if(SendOK){
+        blinkLed(500,25);
+        break;
+      }
+      // else{
+      //   delay(5000);
+      // }
+    }
+  }
+  delay(300);
+
+  #endif
+
+
 
   #ifdef LaveuseBacTanger
 
@@ -295,6 +403,12 @@ void loop() {
 
   #endif
 
+
+
+
+
+
+
   #ifdef CiterneTanger
 
   uint8_t compteur=0;
@@ -370,7 +484,7 @@ void loop() {
     delay(1500);
     if(SendOK){
       blinkLed(500,25);
-      delay(15000);
+      delay(10000);
       break;
     }else{
       delay(5000);
@@ -411,11 +525,11 @@ void loop() {
   if(compteur>6){
     bus.PD1='1';
     #ifdef debug
-    Serial.print("Levée de la porte arrière ON");
+    Serial.println("Levée de la porte arrière ON");
     #endif
   }else{
     #ifdef debug
-    Serial.print("Levée de la porte arrière OFF");
+    Serial.println("Levée de la porte arrière OFF");
     #endif
     bus.PD1='0';
   }
@@ -429,15 +543,15 @@ void loop() {
       compteur++;
     }
   }
-  if(compteur>2){
+  if(compteur>5){
     bus.PD2='1';
     #ifdef debug
-    Serial.print("Levée du Bac ON");
+    Serial.println("Levée du Bac ON");
     #endif
   }else{
     bus.PD2='0';
     #ifdef debug
-    Serial.print("Levée du Bac OFF");
+    Serial.println("Levée du Bac OFF");
     #endif
   }
 
@@ -450,13 +564,13 @@ void loop() {
       compteur++;
     }
   }
-  if(compteur>7){
+  if(compteur>5){
     bus.PD3='1';
-    Serial.print("Cycle LC ON");
+    Serial.println("Cycle LC ON");
 
   }else{
     bus.PD3='0';
-    Serial.print("Cycle LC OFF");
+    Serial.println("Cycle LC OFF");
   }
 
   if(refPD1!=bus.PD1){
@@ -471,9 +585,18 @@ void loop() {
     refPD3=bus.PD3;
     send=true;
   }
-
-  sendData();
-  delay(2000);
+  if(send){
+    send=false;
+    for(int i=0;i<3;i++){
+      sendData();
+      // delay(7000);
+      if(SendOK){
+        blinkLed(500,25);
+        break;
+      }
+    }
+  }
+  delay(3000);
   #endif
 
   // #ifdef Citerne
@@ -534,7 +657,7 @@ void loop() {
   //   }
   // }
   // #endif
-  #ifdef LaveuseBrosseuse
+  #ifdef BalayeuseMeca
 
   uint8_t compteur=0;
   for(int i=0;i<10;i++){
@@ -619,17 +742,17 @@ void loop() {
       }
     }
   }
-  delay(5000);
+  delay(2000);
   #endif
 
   #ifdef test
   int voltage1=ina260_1.readBusVoltage();
   Serial.print("Port1=");Serial.println(voltage1);
-  int voltage2=ina260_2.readBusVoltage();
-  Serial.print("Port2=");Serial.println(voltage2);
-  int voltage3=ina260_3.readBusVoltage();
-  Serial.print("Port3=");Serial.println(voltage3);
-  Serial.println("");
-  delay(1000);
+  // int voltage2=ina260_2.readBusVoltage();
+  // Serial.print("Port2=");Serial.println(voltage2);
+  // int voltage3=ina260_3.readBusVoltage();
+  // Serial.print("Port3=");Serial.println(voltage3);
+  // Serial.println("");
+  // delay(1000);
   #endif
 }
