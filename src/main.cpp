@@ -19,7 +19,7 @@
 
 #define TensionSeuil 10
 
-uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x6e, 0x6c}; // TracCar MAC Adress 4c:11:ae:9d:6e:6c
+uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9d,0x6e,0x6c}; // TracCar MAC Adress 4c:11:ae:9d:6e:6c
 
 
 
@@ -170,15 +170,16 @@ void loop() {
   }
   if(send){
     send=false;
-    for(int i=0;i<3;i++){
+    for(int i=0;i<5;i++){
       sendData();
+      delay(500);
       if(SendOK){
         blinkLed(500,25);
-        delay(1000);
+        delay(3000);
         break;
       }
     }
   }
-  delay(3000);
+  delay(2000);
   #endif
 }
