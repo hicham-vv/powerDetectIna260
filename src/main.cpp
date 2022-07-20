@@ -2,15 +2,38 @@
 #include <esp_now.h>
 #include <Adafruit_INA260.h>
 #include <math.h>
+#include "SparkFunSX1509.h"
+
+
+  /******** BLock SX01 ********/
+
+  #define  BD  0  // Brosse Droite
+  #define  AD  1  // Aspirateur Droite
+  #define  BG  2  // Brosse Gauche
+  #define  AG  3  // Aspirateur Gauche
+  #define  BC  4  // Brosse Centrale
+  #define  AC  5  // Aspirateur Central
+
+  #define  LC  7  // Levée du caisson
+  #define  AMA 8  // Aspirateur Manuel arrière
+  #define  AP  9  // Activation de la pompe
+  #define  ARD 10  // Activation de la pompe
+  #define  K1  11  // Activation de la pompe
+  #define  K2  12  // Activation de la pompe
+  #define  LAB 13 // Lavage Bac
+  #define  VES 14 // Vidage d'eau sale
+  #define  OPA 15  // Ouverture de la Porte arrière
+
+  /******** BLock SX02 ********/
+
+  #define  CLC 0 // Cycle LC --> 16
+  #define  COM 1 // Compactation --> 17
+  #define  PT  2 // Pousée Tablier --> 18
+
 
 #ifdef ESP32
   #include <WiFi.h>
 #endif
-
-
-#define INA260_I2CADDR_3 0x41 // INA260 I2c Adress 0x41 A1=0/A0=1
-#define INA260_I2CADDR_2 0x40 // INA260 default i2c address 0x40 A1=0/A0=0
-#define INA260_I2CADDR_1 0x44 // INA260 I2c Adress 0x44 A1=1/A0=0
 
 
 
@@ -21,29 +44,34 @@
 
 // #define test
 
-#define Laveusecolonne
+// #define Laveusecolonne
 // #define BalayeuseMeca
 // #define CiterneTanger
 // #define LaveuseBacTanger
-// #define BOM
+#define BOM
 
 
 
 
 
 
-uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9b,0xdb,0x44}; // TracCar MAC Adress 4c:11:ae:9b:db:44
-bool SendOK=false;
+uint8_t receiverMAC[] = {0x98,0xf4,0xab,0x6b,0xd6,0x68}; // TracCar MAC Adress 98:f4:ab:6b:d6:68
+bool SendOK=false; // 98:f4:ab:6b:d6:68
 
 
 
-Adafruit_INA260 ina260_1 = Adafruit_INA260();
-Adafruit_INA260 ina260_2 = Adafruit_INA260();
-Adafruit_INA260 ina260_3 = Adafruit_INA260();
+SX1509 io_1; // Create an SX1509_1 object to be used throughout
+SX1509 io_2; // Create an SX1509_2 object to be used throughout
+
+const byte SX1509_ADDRESS_1 = 0x3E;  // SX1509_1 I2C address
+const byte SX1509_ADDRESS_2 = 0x3F;  // SX1509_2 I2C address
 
 
 
-#define Led_esp 2  
+
+
+#define Led_esp 2
+#define Reg_Enable 15
 boolean ledState = false;
 
 #define RETRY_INTERVAL 5000
@@ -58,26 +86,36 @@ unsigned long currentMillis;
 unsigned long sentStartTime;
 unsigned long lastSentTime;
 
+
+#define cSize 24 // Trame Powerdetect size
+
 typedef struct message {
-char PD1='0';
-char PD2='0'; 
-char PD3='0'; 
-int TotalDistance = -1;
-int FuelTank = -1;
-int TotalHours = -1;
-int TotalFuelused =-1;
-int CoolantTemp =-1;
+  char V1 = '0';
+  char V2 = '0';
+  char V3 = '0';
+  int TotalDistance =-1;
+  int FuelTank =-1;
+  int TotalHours =-1;
+  int TotalFuelused =-1;
+  int CoolantTemp =-1;
+  int RPM =-1;
+  int BrakePP=-1;
+  int AccPP=-1;
+  // char a[10];
+
+  char Nsensor[cSize+1]= {'0','0','0','0','0','0','0','0',
+                        '0','0','0','0','0','0','0','0',
+                        '0','0','0','0','0','0','0','0'};
 }message;
 message bus; // créer une structure message nommé bus
 
 
-int voltage=0;
-int current=0;
-int power=0;
+bool voltage=false;
 
-char refPD1='0';
-char refPD2='0'; 
-char refPD3='0'; 
+
+char refPD[cSize+1]= {'0','0','0','0','0','0','0','0',
+                    '0','0','0','0','0','0','0','0',
+                    '0','0','0','0','0','0','0','0'};
 int refWaterLV=0;
 bool send=false;
 
@@ -88,6 +126,8 @@ bool send=false;
 
 
 
+bool compareArrays(char a[], char b[], int n);
+void copyArrays(char a[], char b[], int n);
 
 void blinkLed(uint16_t time_Out,uint16_t ms){
   previousMillis=millis();
@@ -121,47 +161,91 @@ void setup() {
   Serial.begin(115200);
   while(!Serial);
   #endif
-  delay(5000);
-
+  delay(500);
   pinMode(Led_esp,OUTPUT);
 
+  pinMode(Reg_Enable,OUTPUT);
+  digitalWrite(Reg_Enable,LOW);
+  delay(1500);
+  pinMode(Reg_Enable,INPUT);
+  delay(500);
+  if(!Wire.begin(21,22,100000)){
+    blinkLed(1000,25); // for debugging
+    #ifdef debug
+    Serial.println("I2C communication can't Begin!!! Check Qwiic Power voltage");
+    #endif
+    esp_restart();
+  }else{
+    #ifdef debug
+    Serial.println("I2C communication OK");
+    #endif
+  }
+  delay(500);
 
-  if (!ina260_1.begin(INA260_I2CADDR_1)){
+  if (!io_1.begin(SX1509_ADDRESS_1)){
     #ifdef debug
-    Serial.println("Couldn't find INA260 chip 1");
+    Serial.println("SX1509_1 Failed to communicate.");
     #endif
+    blinkLed(2000,500);
     esp_restart();
   }
   else{
     #ifdef debug
-    Serial.println("Found INA260 chip 1");
+    Serial.println("SX1509_1 begin");
     #endif
   }
-    if (!ina260_2.begin(INA260_I2CADDR_2)){
+
+  delay(500);
+  if (!io_2.begin(SX1509_ADDRESS_2)){
     #ifdef debug
-    Serial.println("Couldn't find INA260 chip 2");
+    Serial.println("SX1509_2 Failed to communicate.");
     #endif
+    blinkLed(2000,500);
     esp_restart();
   }
   else{
     #ifdef debug
-    Serial.println("Found INA260 chip 2");
+    Serial.println("SX1509_2 begin");
     #endif
   }
-    if (!ina260_3.begin(INA260_I2CADDR_3)){
-    #ifdef debug
-    Serial.println("Couldn't find INA260 chip 3");
-    #endif
-    esp_restart();
-  }
-  else{
-    #ifdef debug
-    Serial.println("Found INA260 chip 3");
-    #endif
-  }
+
+  // Block SX1 // 
+  io_1.pinMode(BD, INPUT);
+  io_1.pinMode(AD, INPUT);
+  io_1.pinMode(BG, INPUT);
+  io_1.pinMode(AG, INPUT);
+  io_1.pinMode(BC, INPUT);
+  io_1.pinMode(AC, INPUT);
+  io_1.pinMode(LC, INPUT);
+  io_1.pinMode(AMA, INPUT);
+  io_1.pinMode(AP, INPUT);
+  io_1.pinMode(VES, INPUT);
+  io_1.pinMode(OPA, INPUT);
+
+
+
+  // Block SX2 //
+  io_2.pinMode(CLC, INPUT);
+  io_2.pinMode(COM, INPUT);
+  io_2.pinMode(PT, INPUT);
+  // io_2.pinMode(3, INPUT);
+  // io_2.pinMode(4, INPUT);
+  // io_2.pinMode(5, INPUT);
+  // io_2.pinMode(6, INPUT);
+  
+
+
 
 
   
+
+
+
+
+
+
+
+
 
   WiFi.mode(WIFI_STA); // set the wifi mode as Station
   if (esp_now_init() != ESP_OK) {
@@ -193,410 +277,83 @@ void setup() {
 void loop() {
 
 
-  #ifdef Laveusecolonne
-
-  
+  #ifdef BOM
   uint8_t compteur=0;
-  int VidageSale=0;
-  int LavageBac=0;
-  int waterlv=0;
-  int Mwaterlv=0;
-
-  for(int i=0;i<7;i++){
-    VidageSale=ina260_1.readBusVoltage();
-    VidageSale=VidageSale/1000;
-    Serial.println(VidageSale);
-    if(VidageSale>TensionSeuil){
-      compteur++;
-    }
-  }
-  if(compteur>4){
-    Serial.println("Vidage eau sale On");
-    bus.PD1='1';
-  }else{
-    Serial.println("Vidage eau sale OFF");
-    bus.PD1='0';
-  }
-  compteur=0;
-  // for(int i=0;i<8;i++){
-  //   LavageBac=ina260_2.readBusVoltage();
-  //   LavageBac=LavageBac/1000;
-  //   Serial.print(LavageBac);Serial.print("*");
-  //   if(LavageBac>TensionSeuil){
-  //     compteur++;
-  //   }
-  // }
-  // if(compteur>4){
-  //   Serial.println("Lavage de BAC ON");
-  //   bus.PD2='1';
-  // }else{
-  //   Serial.println("Lavage de BAC OFF");
-  //   bus.PD2='0';
-  // }
-  // LavageBac=ina260_2.readBusVoltage();
-  // unsigned long prevms=millis();
-  // while((LavageBac>TensionSeuil) && ((millis()-prevms)<15000)){
-  //   LavageBac=ina260_2.readBusVoltage();
-  // }
-
-  waterlv=ina260_3.readBusVoltage();
-  Mwaterlv=waterlv;
-  int comp=1;
-  for(int i=0;i<14;i++){
-    waterlv=ina260_3.readBusVoltage();
-    // Serial.println(waterlv);
-    if(waterlv>0 && waterlv<5300){
-      Mwaterlv=Mwaterlv+waterlv;
-      comp++;
-    }
-  }
-  Mwaterlv=Mwaterlv/comp;
-  // Serial.print("Moyenne=");Serial.println(Mwaterlv);
-  Mwaterlv=Mwaterlv*1500;
-  Mwaterlv=Mwaterlv/5000;
-  // Mwaterlv=Mwaterlv+600;
-  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
-
-  bus.CoolantTemp=Mwaterlv;
-  if(refPD1!=bus.PD1){
-    refPD1=bus.PD1;
-    send=true;
-  }
-  if(refPD2!=bus.PD2){
-    refPD2=bus.PD2;
-    send=true;
-  }
-  int deltaLv;
-  deltaLv=Mwaterlv-refWaterLV;
-  if(abs(deltaLv)>200){
-    refWaterLV=Mwaterlv;
-    send=true;
-  }
-
-  if(send){
-    send=false;
-    for(int i=0;i<3;i++){
-      #ifdef debug
-      Serial.println("Done");
-      Serial.print(bus.PD1);
-      // Serial.print(bus.PD2);
-      Serial.print("*");
-      Serial.print(bus.CoolantTemp);
-      #endif
-      sendData();
-      // delay(7000);
-      if(SendOK){
-        blinkLed(500,25);
-        break;
-      }
-      // else{
-      //   delay(5000);
-      // }
-    }
-  }
-  delay(300);
-
-  #endif
-
-
-
-  #ifdef LaveuseBacTanger
-
-  
-  uint8_t compteur=0;
-  int karsher=0;
-  int LavageBac=0;
-  int waterlv=0;
-  int Mwaterlv=0;
-
-  for(int i=0;i<8;i++){
-    karsher=ina260_1.readBusVoltage();
-    if(karsher>1700 && karsher<1900 ){
-      compteur++;
-    }
-  }
-  if(compteur>4){
-    Serial.println("Karsher ON");
-    bus.PD1='1';
-  }else{
-    Serial.println("Karsher OFF");
-    bus.PD1='0';
-  }
-  compteur=0;
-  for(int i=0;i<8;i++){
-    LavageBac=ina260_2.readBusVoltage();
-    LavageBac=LavageBac/1000;
-    Serial.print(LavageBac);Serial.print("*");
-    if(LavageBac>TensionSeuil){
-      compteur++;
-    }
-  }
-  if(compteur>4){
-    Serial.println("Lavage de BAC ON");
-    bus.PD2='1';
-  }else{
-    Serial.println("Lavage de BAC OFF");
-    bus.PD2='0';
-  }
-  LavageBac=ina260_2.readBusVoltage();
-  unsigned long prevms=millis();
-  while((LavageBac>TensionSeuil) && ((millis()-prevms)<15000)){
-    LavageBac=ina260_2.readBusVoltage();
-  }
-
-  waterlv=ina260_3.readBusVoltage();
-  Mwaterlv=waterlv;
-  int comp=1;
-  for(int i=0;i<14;i++){
-    waterlv=ina260_3.readBusVoltage();
-    // Serial.println(waterlv);
-    if(waterlv>0 && waterlv<5300){
-      Mwaterlv=Mwaterlv+waterlv;
-      comp++;
-    }
-  }
-  Mwaterlv=Mwaterlv/comp;
-  // Serial.print("Moyenne=");Serial.println(Mwaterlv);
-  Mwaterlv=Mwaterlv*1500;
-  Mwaterlv=Mwaterlv/5000;
-  Mwaterlv=Mwaterlv+600;
-  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
-
-  bus.CoolantTemp=Mwaterlv;
-  if(refPD1!=bus.PD1){
-    refPD1=bus.PD1;
-    send=true;
-  }
-  if(refPD2!=bus.PD2){
-    refPD2=bus.PD2;
-    send=true;
-  }
-  int deltaLv;
-  deltaLv=Mwaterlv-refWaterLV;
-  if(abs(deltaLv)>150){
-    refWaterLV=Mwaterlv;
-    send=true;
-  }
-
-  if(send){
-    send=false;
-    for(int i=0;i<3;i++){
-      #ifdef debug
-      Serial.println("Done");
-      Serial.print(bus.PD1);
-      Serial.print(bus.PD2);
-      Serial.print("*");
-      Serial.print(bus.CoolantTemp);
-      #endif
-      sendData();
-      // delay(7000);
-      if(SendOK){
-        blinkLed(500,25);
-        break;
-      }
-      // else{
-      //   delay(5000);
-      // }
-    }
-  }
-  delay(100);
-
-  #endif
-
-
-
-
-
-
-
-  #ifdef CiterneTanger
-
-  uint8_t compteur=0;
-  int cardan=0;
-  int karsher=0;
-  int waterlv=0;
-  int Mwaterlv=0;
-
-
   for(int i=0;i<5;i++){
-    cardan=ina260_1.readBusVoltage();
-    cardan=cardan/1000;
-    Serial.println(cardan);
-    if(cardan>TensionSeuil){
+    voltage=io_1.digitalRead(OPA);
+    if(!voltage){
       compteur++;
     }
   }
   if(compteur>2){
-    bus.PD1='1';
-  }else{
-    bus.PD1='0';
-  }
-  compteur=0;
-  if(bus.PD1=='1'){
-    Serial.println("Cardan ON");
-    for(int i=0;i<7;i++){
-      karsher=ina260_2.readBusVoltage();
-      Serial.println(karsher);
-      if(karsher>520){
-        compteur++;
-      }
-    }
-    if(compteur>2){
-      bus.PD2='1';
-    }else{
-      bus.PD2='0';
-    }
-  }else{
-    Serial.println("Cardan OFF");
-    bus.PD2='0';
-  }
-  if(bus.PD2=='1'){
-    Serial.println("Karsher ON");
-  }else{
-    Serial.println("Karsher OFF");
-  }
-  waterlv=ina260_3.readBusVoltage();
-  Mwaterlv=waterlv;
-  int comp=1;
-  for(int i=0;i<14;i++){
-    waterlv=ina260_3.readBusVoltage();
-    Serial.println(waterlv);
-    if(waterlv>0 && waterlv<5300){
-      Mwaterlv=Mwaterlv+waterlv;
-      comp++;
-    }
-  }
-  Mwaterlv=Mwaterlv/comp;
-  Serial.print("Moyenne=");Serial.println(Mwaterlv);
-  Mwaterlv=Mwaterlv*1500;
-  Serial.println(Mwaterlv);
-  Mwaterlv=Mwaterlv/5000;
-  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
-
-
-  bus.CoolantTemp=Mwaterlv;
-
-  for(int i=0;i<3;i++){
+    bus.Nsensor[OPA]='1';
     #ifdef debug
-    Serial.println("Done");
+    Serial.println("Ouverture de la porte arrière ON");
     #endif
-    sendData();
-    delay(1500);
-    if(SendOK){
-      blinkLed(500,25);
-      delay(10000);
-      break;
-    }else{
-      delay(5000);
-    }
+  }else{
+    #ifdef debug
+    Serial.println("Ouverture de la porte arrière OFF");
+    #endif
+    bus.Nsensor[OPA]='0';
   }
-  
 
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  #endif
-
-  #ifdef BOM
-
-  uint8_t compteur=0;
-  for(int i=0;i<10;i++){
-    voltage=ina260_1.readBusVoltage();
-    voltage=voltage/1000;
-    if(voltage>TensionSeuil){
+  compteur=0;
+  for(int i=0;i<5;i++){
+    voltage=io_2.digitalRead(CLC);
+    if(!voltage){
       compteur++;
     }
   }
-
-  if(compteur>6){
-    bus.PD1='1';
+  if(compteur>2){
+    bus.Nsensor[CLC]='1';
     #ifdef debug
-    Serial.println("Levée de la porte arrière ON");
-    #endif
-  }else{
-    #ifdef debug
-    Serial.println("Levée de la porte arrière OFF");
-    #endif
-    bus.PD1='0';
-  }
-
-
-  compteur=0;
-  for(int i=0;i<10;i++){
-    voltage=ina260_2.readBusVoltage();
-    voltage=voltage/1000;
-    if(voltage>TensionSeuil){
-      compteur++;
-    }
-  }
-  if(compteur>5){
-    bus.PD2='1';
-    #ifdef debug
-    Serial.println("Levée du Bac ON");
-    #endif
-  }else{
-    bus.PD2='0';
-    #ifdef debug
-    Serial.println("Levée du Bac OFF");
-    #endif
-  }
-
-
-  compteur=0;
-  for(int i=0;i<10;i++){
-    voltage=ina260_3.readBusVoltage();
-    voltage=voltage/1000;
-    if(voltage>TensionSeuil){
-      compteur++;
-    }
-  }
-  if(compteur>5){
-    bus.PD3='1';
     Serial.println("Cycle LC ON");
+    #endif
+  }else{
+    bus.Nsensor[CLC]='0';
+    #ifdef debug
+    Serial.println("Cycle LC OFF");
+    #endif
+  }
+
+
+  compteur=0;
+  for(int i=0;i<5;i++){
+    voltage=io_2.digitalRead(COM);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur>2){
+    bus.Nsensor[COM]='1';
+    Serial.println("Compactation ON");
 
   }else{
-    bus.PD3='0';
-    Serial.println("Cycle LC OFF");
+    bus.Nsensor[COM]='0';
+    Serial.println("Compactation OFF\n");
   }
 
-  if(refPD1!=bus.PD1){
-    refPD1=bus.PD1;
+  
+
+  bool compare=compareArrays(refPD,bus.Nsensor,cSize);
+  if(!compare){
+    copyArrays(refPD,bus.Nsensor,cSize);
     send=true;
   }
-  if(refPD2!=bus.PD2){
-    refPD2=bus.PD2;
-    send=true;
-  }
-  if(refPD3!=bus.PD3){
-    refPD3=bus.PD3;
-    send=true;
-  }
-  if(send){
+  if(true){
     send=false;
+    Serial.println("\nSending Data\n");
     for(int i=0;i<3;i++){
       sendData();
-      // delay(7000);
+      delay(2500);
       if(SendOK){
         blinkLed(500,25);
+        delay(2000);
         break;
       }
     }
   }
-  delay(3000);
+  delay(2500);
   #endif
 
   // #ifdef Citerne
@@ -746,13 +503,106 @@ void loop() {
   #endif
 
   #ifdef test
-  int voltage1=ina260_1.readBusVoltage();
-  Serial.print("Port1=");Serial.println(voltage1);
-  // int voltage2=ina260_2.readBusVoltage();
-  // Serial.print("Port2=");Serial.println(voltage2);
-  // int voltage3=ina260_3.readBusVoltage();
-  // Serial.print("Port3=");Serial.println(voltage3);
-  // Serial.println("");
-  // delay(1000);
+
+  voltage=io_1.digitalRead(BD);
+  if(!voltage){
+    bus.Nsensor[BD]='1';
+  }else{
+    bus.Nsensor[BD]='0';
+  }
+  voltage=io_1.digitalRead(AD);
+  if(!voltage){
+    bus.Nsensor[AD]='1';
+  }else{
+    bus.Nsensor[AD]='0';
+  }
+    voltage=io_1.digitalRead(BG);
+  if(!voltage){
+    bus.Nsensor[BG]='1';
+  }else{
+    bus.Nsensor[BG]='0';
+  }
+    voltage=io_1.digitalRead(AG);
+  if(!voltage){
+    bus.Nsensor[AG]='1';
+  }else{
+    bus.Nsensor[AG]='0';
+  }
+    voltage=io_1.digitalRead(BC);
+  if(!voltage){
+    bus.Nsensor[BC]='1';
+  }else{
+    bus.Nsensor[BC]='0';
+  }
+    voltage=io_1.digitalRead(AC);
+  if(!voltage){
+    bus.Nsensor[AC]='1';
+  }else{
+    bus.Nsensor[AC]='0';
+  }
+
+
+  voltage=io_2.digitalRead(CLC);
+  if(!voltage){
+    bus.Nsensor[CLC]='1';
+  }else{
+    bus.Nsensor[CLC]='0';
+  }
+  voltage=io_2.digitalRead(COM);
+  if(!voltage){
+    bus.Nsensor[COM]='1';
+  }else{
+    bus.Nsensor[COM]='0';
+  }
+  voltage=io_2.digitalRead(PT);
+  if(!voltage){
+    bus.Nsensor[PT]='1';
+  }else{
+    bus.Nsensor[PT]='0';
+  }
+
+
+  voltage=io_2.digitalRead(22);
+  if(voltage){
+    bus.Nsensor[22]='1';
+  }else{
+    bus.Nsensor[22]='0';
+  }
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  String data=String(bus.Nsensor);
+  Serial.println(data);
+  Serial.println("************************************");
+
+  delay(5000);
   #endif
+}
+
+
+
+bool compareArrays(char a[], char b[], int n){
+  for (int i=0; i<n; ++i){
+    if (a[i] != b[i]){
+        return false;
+    }
+  }
+  return true;
+}
+void copyArrays(char a[], char b[], int n){
+  for (int i=0; i<n; ++i){
+    a[i] = b[i];
+  }
 }
