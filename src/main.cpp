@@ -305,12 +305,12 @@ void loop() {
     }
   }
   if(compteur>2){
-    bus.Nsensor[CLC]='1';
+    bus.Nsensor[CLC+16]='1';
     #ifdef debug
     Serial.println("Cycle LC ON");
     #endif
   }else{
-    bus.Nsensor[CLC]='0';
+    bus.Nsensor[CLC+16]='0';
     #ifdef debug
     Serial.println("Cycle LC OFF");
     #endif
@@ -325,11 +325,11 @@ void loop() {
     }
   }
   if(compteur>2){
-    bus.Nsensor[COM]='1';
+    bus.Nsensor[COM+16]='1';
     Serial.println("Compactation ON");
 
   }else{
-    bus.Nsensor[COM]='0';
+    bus.Nsensor[COM+16]='0';
     Serial.println("Compactation OFF\n");
   }
 
@@ -502,92 +502,79 @@ void loop() {
   delay(2000);
   #endif
 
-  #ifdef test
+#ifdef test
 
   voltage=io_1.digitalRead(BD);
-  if(!voltage){
-    bus.Nsensor[BD]='1';
-  }else{
-    bus.Nsensor[BD]='0';
-  }
+  if(!voltage) bus.Nsensor[BD]='1'; else bus.Nsensor[BD]='0';
+  
   voltage=io_1.digitalRead(AD);
-  if(!voltage){
-    bus.Nsensor[AD]='1';
-  }else{
-    bus.Nsensor[AD]='0';
+  if(!voltage) bus.Nsensor[AD]='1'; else bus.Nsensor[AD]='0';
+
+  voltage=io_1.digitalRead(BG);
+  if(!voltage) bus.Nsensor[BG]='1'; else bus.Nsensor[BG]='0';
+
+  voltage=io_1.digitalRead(AG);
+  if(!voltage) bus.Nsensor[AG]='1'; else bus.Nsensor[AG]='0';
+
+  voltage=io_1.digitalRead(BC);
+  if(!voltage) bus.Nsensor[BC]='1'; else bus.Nsensor[BC]='0';
+
+      voltage=io_1.digitalRead(AC);
+  if(!voltage) bus.Nsensor[AC]='1'; else bus.Nsensor[AC]='0';
+
+      voltage=io_1.digitalRead(LC);
+  if(!voltage) bus.Nsensor[LC]='1'; else bus.Nsensor[LC]='0';
+
+      voltage=io_1.digitalRead(AMA);
+  if(!voltage) bus.Nsensor[AMA]='1'; else bus.Nsensor[AMA]='0';
+
+      voltage=io_1.digitalRead(AP);
+  if(!voltage) bus.Nsensor[AP]='1'; else bus.Nsensor[AP]='0';
+
+      voltage=io_1.digitalRead(ARD);
+  if(!voltage) bus.Nsensor[ARD]='1'; else bus.Nsensor[ARD]='0';
+
+      voltage=io_1.digitalRead(K1);
+  if(!voltage) bus.Nsensor[K1]='1'; else bus.Nsensor[K1]='0';
+
+      voltage=io_1.digitalRead(K2);
+  if(!voltage) bus.Nsensor[K2]='1'; else bus.Nsensor[K2]='0';
+
+      voltage=io_1.digitalRead(LAB);
+  if(!voltage) bus.Nsensor[LAB]='1'; else bus.Nsensor[LAB]='0';
+
+      voltage=io_1.digitalRead(VES);
+  if(!voltage) bus.Nsensor[VES]='1'; else bus.Nsensor[VES]='0';
+
+      voltage=io_1.digitalRead(OPA);
+  if(!voltage) bus.Nsensor[OPA]='1'; else bus.Nsensor[OPA]='0';
+
+
+  /**************************SX02************************************/
+
+      voltage=io_2.digitalRead(CLC);
+  if(!voltage) bus.Nsensor[CLC+16]='1'; else bus.Nsensor[CLC+16]='0';
+
+      voltage=io_2.digitalRead(COM);
+  if(!voltage) bus.Nsensor[COM+16]='1'; else bus.Nsensor[COM+16]='0';
+
+        voltage=io_2.digitalRead(PT);
+  if(!voltage) bus.Nsensor[PT+16]='1'; else bus.Nsensor[PT+16]='0';
+
+  
+
+  
+
+
+  #ifdef debug
+  for (int i=0; i<cSize; ++i){
+    if(i==16) Serial.print("   ");
+    Serial.print(bus.Nsensor[i]);
   }
-    voltage=io_1.digitalRead(BG);
-  if(!voltage){
-    bus.Nsensor[BG]='1';
-  }else{
-    bus.Nsensor[BG]='0';
-  }
-    voltage=io_1.digitalRead(AG);
-  if(!voltage){
-    bus.Nsensor[AG]='1';
-  }else{
-    bus.Nsensor[AG]='0';
-  }
-    voltage=io_1.digitalRead(BC);
-  if(!voltage){
-    bus.Nsensor[BC]='1';
-  }else{
-    bus.Nsensor[BC]='0';
-  }
-    voltage=io_1.digitalRead(AC);
-  if(!voltage){
-    bus.Nsensor[AC]='1';
-  }else{
-    bus.Nsensor[AC]='0';
-  }
+  Serial.println("\n************************************");
+  #endif
 
-
-  voltage=io_2.digitalRead(CLC);
-  if(!voltage){
-    bus.Nsensor[CLC]='1';
-  }else{
-    bus.Nsensor[CLC]='0';
-  }
-  voltage=io_2.digitalRead(COM);
-  if(!voltage){
-    bus.Nsensor[COM]='1';
-  }else{
-    bus.Nsensor[COM]='0';
-  }
-  voltage=io_2.digitalRead(PT);
-  if(!voltage){
-    bus.Nsensor[PT]='1';
-  }else{
-    bus.Nsensor[PT]='0';
-  }
-
-
-  voltage=io_2.digitalRead(22);
-  if(voltage){
-    bus.Nsensor[22]='1';
-  }else{
-    bus.Nsensor[22]='0';
-  }
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  String data=String(bus.Nsensor);
-  Serial.println(data);
-  Serial.println("************************************");
-
-  delay(5000);
+  delay(2500);
   #endif
 }
 
