@@ -340,7 +340,7 @@ void loop() {
     copyArrays(refPD,bus.Nsensor,cSize);
     send=true;
   }
-  if(true){
+  if(send){
     send=false;
     Serial.println("\nSending Data\n");
     for(int i=0;i<3;i++){
