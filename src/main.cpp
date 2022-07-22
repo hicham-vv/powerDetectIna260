@@ -281,8 +281,8 @@ void setup() {
       #endif
       esp_restart();
     }
-  }
   esp_task_wdt_reset();
+  }
 
 void loop() {
 
