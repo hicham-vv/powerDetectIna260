@@ -49,7 +49,8 @@
 // #define BalayeuseMeca
 // #define CiterneTanger
 // #define LaveuseBacTanger
-#define BOM
+// #define BOM
+#define BenneSat
 
 
 
@@ -285,6 +286,73 @@ void setup() {
   }
 
 void loop() {
+
+
+  #ifdef BenneSat
+  uint8_t compteur=0;
+  for(int i=0;i<5;i++){
+    voltage=io_1.digitalRead(LC);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur>2){
+    bus.Nsensor[LC]='1';
+    #ifdef debug
+    Serial.println("Levée du caisson ON");
+    #endif
+  }else{
+    #ifdef debug
+    Serial.println("Levée du caisson OFF");
+    #endif
+    bus.Nsensor[LC]='0';
+  }
+
+  compteur=0;
+  for(int i=0;i<5;i++){
+    voltage=io_2.digitalRead(CLC);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur>2){
+    bus.Nsensor[CLC+16]='1';
+    #ifdef debug
+    Serial.println("Cycle LC ON");
+    #endif
+  }else{
+    bus.Nsensor[CLC+16]='0';
+    #ifdef debug
+    Serial.println("Cycle LC OFF");
+    #endif
+  }
+  
+
+  bool compare=compareArrays(refPD,bus.Nsensor,cSize);
+  if(!compare){
+    copyArrays(refPD,bus.Nsensor,cSize);
+    send=true;
+  }
+  if(send){
+    send=false;
+    #ifdef debug
+    Serial.println("\nSending Data\n");
+    #endif
+    for(int i=0;i<3;i++){
+      sendData();
+      delay(2500);
+      if(SendOK){
+        blinkLed(500,25);
+        delay(2000);
+        break;
+      }
+    }
+  }
+  #ifdef debug
+  Serial.println("*******************************");
+  #endif
+  delay(1500);
+  #endif
 
 
   #ifdef BOM
