@@ -41,7 +41,7 @@ Adafruit_INA260 ina260_1 = Adafruit_INA260();
 Adafruit_INA260 ina260_2 = Adafruit_INA260();
 Adafruit_INA260 ina260_3 = Adafruit_INA260();
 
-
+#define cSize 24 // Trame Powerdetect size
 
 #define Led_esp 2  
 boolean ledState = false;
@@ -59,14 +59,22 @@ unsigned long sentStartTime;
 unsigned long lastSentTime;
 
 typedef struct message {
-char PD1='0';
-char PD2='0'; 
-char PD3='0'; 
-int TotalDistance = -1;
-int FuelTank = -1;
-int TotalHours = -1;
-int TotalFuelused =-1;
-int CoolantTemp =-1;
+  char PD1 = '0';
+  char PD2 = '0';
+  char PD3 = '0';
+  int TotalDistance =-1;
+  int FuelTank =-1;
+  int TotalHours =-1;
+  int TotalFuelused =-1;
+  int CoolantTemp =-1;
+  int RPM =-1;
+  int BrakePP=-1;
+  int AccPP=-1;
+  // char a[10];
+
+  char Nsensor[cSize+1]= {'0','0','0','0','0','0','0','0',
+                          '0','0','0','0','0','0','0','0',
+                          '0','0','0','0','0','0','0','0'};
 }message;
 message bus; // créer une structure message nommé bus
 
