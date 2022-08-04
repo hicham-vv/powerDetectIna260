@@ -44,20 +44,21 @@
 
 
 // #define test
+#define Test2
 
 // #define Laveusecolonne
 // #define BalayeuseMeca
 // #define CiterneTanger
 // #define LaveuseBacTanger
 // #define BOM
-#define BenneSat
+// #define BenneSat
 
 
 
 
 
 
-uint8_t receiverMAC[] = {0x98,0xf4,0xab,0x6b,0xd6,0x68}; // TracCar MAC Adress 98:f4:ab:6b:d6:68
+uint8_t receiverMAC[] = {0x3c,0x71,0xbf,0x86,0x56,0xe0}; // TracCar MAC Adress 3c:71:bf:86:56:e0 
 bool SendOK=false; // 98:f4:ab:6b:d6:68
 
 
@@ -264,6 +265,11 @@ void setup() {
     #endif
     delay(RETRY_INTERVAL);
     esp_restart();
+  }else{
+    #ifdef debug
+    Serial.println("ESP_Now init OK...");
+    #endif
+
   }
 
     // Once ESPNow is successfully Init, we will register for Send CB to
@@ -664,9 +670,34 @@ void loop() {
   delay(2500);
 #endif
 
+
+
+#ifdef test1
+
+  if(true){
+    send=false;
+    #ifdef debug
+    Serial.println("\nSending Data\n");
+    #endif
+    for(int i=0;i<3;i++){
+      sendData();
+      delay(2500);
+      if(SendOK){
+        blinkLed(500,25);
+        delay(2000);
+        break;
+      }
+    }
+  }
+  delay(5000);
+
+  Serial.println("****************************");
+#endif
+
   esp_task_wdt_reset();
 
 }
+
 
 
 
