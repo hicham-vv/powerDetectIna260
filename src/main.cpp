@@ -18,9 +18,9 @@
   #define  LC  7  // Levée du caisson
   #define  AMA 8  // Aspirateur Manuel arrière
   #define  AP  9  // Activation de la pompe
-  #define  ARD 10  // Activation de la pompe
-  #define  K1  11  // Activation de la pompe
-  #define  K2  12  // Activation de la pompe
+  #define  ARD 10  // Aroseur devant
+  #define  K1  11  // Karsher 1
+  #define  K2  12  // Karsher 2
   #define  LAB 13 // Lavage Bac
   #define  VES 14 // Vidage d'eau sale
   #define  OPA 15  // Ouverture de la Porte arrière
@@ -44,10 +44,10 @@
 
 
 // #define test
-#define Test2
+// #define Test2
 
 // #define Laveusecolonne
-// #define BalayeuseMeca
+#define BalayeuseMeca
 // #define CiterneTanger
 // #define LaveuseBacTanger
 // #define BOM
@@ -128,18 +128,10 @@ bool send=false;
 
 
 
-
+bool CheckVoltage(uint8_t pos, uint8_t sx);
 bool compareArrays(char a[], char b[], int n);
 void copyArrays(char a[], char b[], int n);
-
-void blinkLed(uint16_t time_Out,uint16_t ms){
-  previousMillis=millis();
-  while((millis()-previousMillis)<time_Out){
-    ledState = !ledState;
-    digitalWrite(Led_esp,ledState);
-    delay(ms);
-  }
-}
+void blinkLed(uint16_t time_Out,uint16_t ms);
 
 
 void sendData() {
@@ -226,9 +218,14 @@ void setup() {
   io_1.pinMode(AG, INPUT);
   io_1.pinMode(BC, INPUT);
   io_1.pinMode(AC, INPUT);
+
   io_1.pinMode(LC, INPUT);
   io_1.pinMode(AMA, INPUT);
   io_1.pinMode(AP, INPUT);
+
+  
+
+  io_1.pinMode(LAB, INPUT);
   io_1.pinMode(VES, INPUT);
   io_1.pinMode(OPA, INPUT);
 
@@ -509,90 +506,75 @@ void loop() {
   // #endif
   #ifdef BalayeuseMeca
 
-  uint8_t compteur=0;
-  for(int i=0;i<10;i++){
-    voltage=ina260_1.readBusVoltage();
-    voltage=voltage/1000;
-    if(voltage>TensionSeuil){
-      compteur++;
-    }
-  }
+  bool check=false;
 
-  if(compteur>6){
-    bus.PD1='1';
-    #ifdef debug
-    Serial.print("Port 1 ON");
-    #endif
-  }else{
-    #ifdef debug
-    Serial.print("Port 1 OFF");
-    #endif
-    bus.PD1='0';
+  check=CheckVoltage(BD,1);
+  if(check) Serial.println("Brosse Droite ON"); else Serial.println("Brosse Droite OFF");
+
+  check=CheckVoltage(AD,1);
+  if(check) Serial.println("Aspirateur Droit ON"); else Serial.println("Aspirateur Droit OFF");
+  
+    check=CheckVoltage(BG,1);
+  if(check) Serial.println("Brosse Gauche ON"); else Serial.println("Brosse Gauche OFF");
+
+    check=CheckVoltage(AG,1);
+  if(check) Serial.println("Aspirateur Gauche ON"); else Serial.println("Aspirateur Gauche OFF");
+
+  check=CheckVoltage(BC,1);
+  if(check) Serial.println("Brosse Centrale ON"); else Serial.println("Brosse Centrale OFF");
+
+  check=CheckVoltage(AC,1);
+  if(check) Serial.println("Aspirateur Centrale ON"); else Serial.println("Aspirateur Centrale OFF");
+
+  check=CheckVoltage(LC,1);
+  if(check) Serial.println("levée caisson ON"); else Serial.println("levée caisson OFF");
+
+  check=CheckVoltage(AMA,1);
+  if(check) Serial.println("Aspirateur Manuel Arriere ON"); else Serial.println("Aspirateur Manuel Arriere OFF");
+
+  check=CheckVoltage(AP,1);
+  if(check) Serial.println("Activation pompe ON"); else Serial.println("Activation pompe OFF");
+
+  check=CheckVoltage(OPA,1);
+  if(check) Serial.println("Ouverture de la Porte arrière ON"); else Serial.println("Ouverture de la Porte arrière OFF");
+
+  #ifdef debug
+  Serial.print("Data=");
+  for (int i=0; i<cSize; ++i){
+    if(i==16) Serial.print("   ");
+    Serial.print(bus.Nsensor[i]);
   }
+  Serial.println("\n************************************");
+  #endif
 
 
-  compteur=0;
-  for(int i=0;i<10;i++){
-    voltage=ina260_2.readBusVoltage();
-    voltage=voltage/1000;
-    if(voltage>TensionSeuil){
-      compteur++;
-    }
-  }
-  if(compteur>6){
-    bus.PD2='1';
-    #ifdef debug
-    Serial.print("Port 2 ON");
-    #endif
-  }else{
-    bus.PD2='0';
-    #ifdef debug
-    Serial.print("Port 2 OFF");
-    #endif
-  }
-
-
-  compteur=0;
-  for(int i=0;i<10;i++){
-    voltage=ina260_3.readBusVoltage();
-    voltage=voltage/1000;
-    if(voltage>TensionSeuil){
-      compteur++;
-    }
-  }
-  if(compteur>6){
-    bus.PD3='1';
-    Serial.print("Port 3 ON");
-
-  }else{
-    bus.PD3='0';
-    Serial.print("Port 3 OFF");
-  }
-
-  if(refPD1!=bus.PD1){
-    refPD1=bus.PD1;
-    send=true;
-  }
-  if(refPD2!=bus.PD2){
-    refPD2=bus.PD2;
-    send=true;
-  }
-  if(refPD3!=bus.PD3){
-    refPD3=bus.PD3;
+  bool compare=compareArrays(refPD,bus.Nsensor,cSize);
+  if(!compare){
+    copyArrays(refPD,bus.Nsensor,cSize);
     send=true;
   }
   if(send){
     send=false;
+    #ifdef debug
+    Serial.println("\nSending Data\n");
+    #endif
     for(int i=0;i<3;i++){
       sendData();
-      // delay(7000);
+      delay(2500);
       if(SendOK){
         blinkLed(500,25);
+        delay(2000);
         break;
       }
     }
   }
-  delay(2000);
+  #ifdef debug
+  Serial.println("*******************************");
+  #endif
+  delay(1500);
+  
+
+
   #endif
 
 #ifdef test
@@ -701,6 +683,18 @@ void loop() {
 
 
 
+void blinkLed(uint16_t time_Out,uint16_t ms){
+  previousMillis=millis();
+  while((millis()-previousMillis)<time_Out){
+    ledState = !ledState;
+    digitalWrite(Led_esp,ledState);
+    delay(ms);
+  }
+}
+
+
+
+
 bool compareArrays(char a[], char b[], int n){
   for (int i=0; i<n; ++i){
     if (a[i] != b[i]){
@@ -713,4 +707,43 @@ void copyArrays(char a[], char b[], int n){
   for (int i=0; i<n; ++i){
     a[i] = b[i];
   }
+}
+
+bool CheckVoltage(uint8_t pos, uint8_t sx){
+  
+  uint8_t compteur=0;
+  // check if SX 1 or SX2
+  if(sx==1){
+    for(int i=0;i<7;i++){
+      voltage=io_1.digitalRead(pos);
+      if(!voltage){
+        compteur++;
+      }
+    }
+
+    if(compteur>3){
+      bus.Nsensor[pos]='1';
+      return true;
+    }else{
+      bus.Nsensor[pos]='0';
+      return false;
+    }
+  }
+
+  if(sx==2){
+    for(int i=0;i<7;i++){
+      voltage=io_2.digitalRead(pos);
+      if(!voltage){
+        compteur++;
+      }
+    }
+    if(compteur>3){
+      bus.Nsensor[pos+16]='1';
+      return true;
+    }else{
+      bus.Nsensor[pos+16]='0';
+      return false;
+    }
+  }
+  return false;
 }
