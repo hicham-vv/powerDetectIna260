@@ -572,10 +572,8 @@ void loop() {
   #ifdef debug
   Serial.println("*******************************");
   #endif
-  delay(1500);
+  delay(4000);
   
-
-
   #endif
 
 #ifdef test
