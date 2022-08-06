@@ -539,13 +539,14 @@ void loop() {
   if(check) Serial.println("Ouverture de la Porte arrière ON"); else Serial.println("Ouverture de la Porte arrière OFF");
 
   #ifdef debug
-  Serial.print("Data=");
+  Serial.println("***************Data*****************");
   for (int i=0; i<cSize; ++i){
     if(i==16) Serial.print("   ");
     Serial.print(bus.Nsensor[i]);
   }
   Serial.println("\n************************************");
   #endif
+
 
 
   bool compare=compareArrays(refPD,bus.Nsensor,cSize);
