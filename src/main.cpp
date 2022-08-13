@@ -302,7 +302,7 @@ const float ADC_LUT[4096] = { 0,
 3996.0000,3996.8000,3997.3999,3998.0000,3998.8000,3999.6001,4000.0000,4002.6001,4004.8000,4007.0000,4009.3999,4011.8000,4014.0000,4016.2000,4026.80
 };
 
-#define ADC_PIN 4
+#define ADC_PIN 34
 
 
   /******** BLock SX01 ********/
@@ -780,20 +780,23 @@ void loop() {
     waterlv=analogRead(ADC_PIN);  
     waterlv=waterlv*3300;
     waterlv=waterlv/4096;
-    if(waterlv>450 && waterlv<2600){
+    Serial.println(waterlv);
+    if(waterlv>=0 && waterlv<3300){
       Mwaterlv=Mwaterlv+waterlv;
       compN++;
+      Serial.print("CompN");
+      Serial.println(compN);
     }
     delay(50);
   }
+
   Mwaterlv=Mwaterlv/compN;
-  Serial.print("Moyenne=");Serial.println(Mwaterlv);
   if(Mwaterlv>=500){
   Mwaterlv=Mwaterlv-500;
   Mwaterlv=Mwaterlv/0.8;
   }else{
     Mwaterlv=0;
-    Serial.print("Water Lv is LOW");
+    Serial.println("Water Lv is LOW");
   }
   #endif
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
