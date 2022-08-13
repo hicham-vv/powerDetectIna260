@@ -19,14 +19,15 @@
 
 // #define Sensor5V
 #define Sensor3V
+#define ARTA3601
 
 
-#define test
+// #define test
 
 // #define Laveusecolonne
 // #define BalayeuseMeca
 // #define CiterneTanger
-// #define LaveuseBacTanger
+#define LaveuseBacTanger
 // #define BOM
 
 
@@ -34,7 +35,7 @@
 
 
 
-uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9b,0xcd,0x08}; // TracCar MAC Adress 4c:11:ae:9b:cd:08
+uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9d,0x6e,0x1c}; // TracCar MAC Adress 4c:11:ae:9d:6e:1c
 bool SendOK=false;
 
 
@@ -351,27 +352,40 @@ void loop() {
   
   uint8_t compteur=0;
   int karsher=0;
+  int Mkarsher=0;
   int LavageBac=0;
   int waterlv=0;
   int Mwaterlv=0;
 
-  // #ifdef Sensor5V
-  // for(int i=0;i<8;i++){
-  //   karsher=ina260_1.readBusVoltage();
-  //   if(karsher>1700 && karsher<1900 ){
-  //     compteur++;
-  //   }
-  // }
-  // #endif
 
   #ifdef Sensor3V
+
+  #ifdef ARTA3601
+  int compK=0;
+  for(int i=0;i<20;i++){
+    karsher=ina260_1.readBusVoltage();
+      Serial.println(karsher);
+      Mkarsher=Mkarsher+karsher;
+      compK++;
+      delay(50);
+    }
+  Mkarsher=Mkarsher/compK;
+  Serial.println(Mkarsher);
+  if(Mkarsher>525 && Mkarsher<1000){
+    Serial.println("Karsher ON");
+    bus.PD1='1';
+  }else{
+    Serial.println("Karsher OFF");
+    bus.PD1='0';
+  }
+  #else
   for(int i=0;i<10;i++){
     karsher=ina260_1.readBusVoltage();
     if(karsher>1000 && karsher<1300 ){
       compteur++;
     }
   }
-  #endif
+
   if(compteur>4){
     Serial.println("Karsher ON");
     bus.PD1='1';
@@ -379,6 +393,10 @@ void loop() {
     Serial.println("Karsher OFF");
     bus.PD1='0';
   }
+  #endif
+
+  #endif
+
   compteur=0;
   for(int i=0;i<8;i++){
     LavageBac=ina260_2.readBusVoltage();
@@ -818,11 +836,11 @@ void loop() {
   #ifdef test
   int voltage1=ina260_1.readBusVoltage();
   Serial.print("Port1=");Serial.println(voltage1);
-  int voltage2=ina260_2.readBusVoltage();
-  Serial.print("Port2=");Serial.println(voltage2);
-  int voltage3=ina260_3.readBusVoltage();
-  Serial.print("Port3=");Serial.println(voltage3);
-  Serial.println("");
-  delay(100);
+  // int voltage2=ina260_2.readBusVoltage();
+  // Serial.print("Port2=");Serial.println(voltage2);
+  // int voltage3=ina260_3.readBusVoltage();
+  // Serial.print("Port3=");Serial.println(voltage3);
+  // Serial.println("");
+  delay(50);
   #endif
 }
