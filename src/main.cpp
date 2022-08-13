@@ -784,8 +784,6 @@ void loop() {
     if(waterlv>=0 && waterlv<3300){
       Mwaterlv=Mwaterlv+waterlv;
       compN++;
-      Serial.print("CompN");
-      Serial.println(compN);
     }
     delay(50);
   }
