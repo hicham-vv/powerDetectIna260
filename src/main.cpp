@@ -21,11 +21,11 @@
 #define Sensor3V
 
 
-// #define test
+#define test
 
 // #define Laveusecolonne
 // #define BalayeuseMeca
-#define CiterneTanger
+// #define CiterneTanger
 // #define LaveuseBacTanger
 // #define BOM
 
@@ -34,7 +34,7 @@
 
 
 
-uint8_t receiverMAC[] = {0x9c,0x9c,0x1f,0xe3,0x10,0xd4}; // TracCar MAC Adress 9c:9c:1f:e3:10:d4
+uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9b,0xcd,0x08}; // TracCar MAC Adress 4c:11:ae:9b:cd:08
 bool SendOK=false;
 
 
@@ -213,17 +213,17 @@ void loop() {
   int waterlv=0;
   int Mwaterlv=0;
 
-  #ifdef Sensor5V
-  for(int i=0;i<8;i++){
-    karsher=ina260_1.readBusVoltage();
-    if(karsher>1700 && karsher<1900 ){
-      compteur++;
-    }
-  }
-  #endif
+  // #ifdef Sensor5V
+  // for(int i=0;i<8;i++){
+  //   karsher=ina260_1.readBusVoltage();
+  //   if(karsher>1700 && karsher<1900 ){
+  //     compteur++;
+  //   }
+  // }
+  // #endif
   int compK=0;
   #ifdef Sensor3V
-  for(int i=0;i<14;i++){
+  for(int i=0;i<20;i++){
     karsher=ina260_1.readBusVoltage();
       Serial.println(karsher);
       Mkarsher=Mkarsher+karsher;
@@ -233,7 +233,7 @@ void loop() {
   Serial.println(Mkarsher);
   #endif
 
-  if(Mkarsher>540){
+  if(Mkarsher>600){
     Serial.println("Karsher ON");
     bus.PD1='1';
   }else{
@@ -242,7 +242,7 @@ void loop() {
   }
 
   compteur=0;
-  for(int i=0;i<8;i++){
+  for(int i=0;i<10;i++){
     LavageBac=ina260_2.readBusVoltage();
     LavageBac=LavageBac/1000;
     Serial.print(LavageBac);Serial.print("*");
@@ -250,7 +250,7 @@ void loop() {
       compteur++;
     }
   }
-  if(compteur>4){
+  if(compteur>5){
     Serial.println("Lavage de BAC ON");
     bus.PD2='1';
   }else{
@@ -340,7 +340,7 @@ void loop() {
       }
     }
   }
-  delay(100);
+  delay(250);
 
   #endif
 
@@ -355,17 +355,17 @@ void loop() {
   int waterlv=0;
   int Mwaterlv=0;
 
-  #ifdef Sensor5V
-  for(int i=0;i<8;i++){
-    karsher=ina260_1.readBusVoltage();
-    if(karsher>1700 && karsher<1900 ){
-      compteur++;
-    }
-  }
-  #endif
+  // #ifdef Sensor5V
+  // for(int i=0;i<8;i++){
+  //   karsher=ina260_1.readBusVoltage();
+  //   if(karsher>1700 && karsher<1900 ){
+  //     compteur++;
+  //   }
+  // }
+  // #endif
 
   #ifdef Sensor3V
-  for(int i=0;i<8;i++){
+  for(int i=0;i<10;i++){
     karsher=ina260_1.readBusVoltage();
     if(karsher>1000 && karsher<1300 ){
       compteur++;
