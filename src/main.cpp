@@ -19,10 +19,10 @@
 // #define Test2
 
 // #define Laveusecolonne
-#define BalayeuseMeca
+// #define BalayeuseMeca
 // #define CiterneTanger
 // #define LaveuseBacTanger
-// #define BOM
+#define BOM
 // #define BenneSat
 
 
@@ -776,8 +776,9 @@ void loop() {
 
   int compN=0;
   #ifdef Sensor3V
-  for(int i=0;i<20;i++){
+  for(int i=0;i<30;i++){
     waterlv=analogRead(ADC_PIN);  
+    Serial.println(waterlv);
     waterlv=waterlv*3300;
     waterlv=waterlv/4096;
     Serial.println(waterlv);
@@ -785,7 +786,7 @@ void loop() {
       Mwaterlv=Mwaterlv+waterlv;
       compN++;
     }
-    delay(50);
+    delay(20);
   }
 
   Mwaterlv=Mwaterlv/compN;
