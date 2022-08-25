@@ -27,9 +27,9 @@
 // #define test
 
 // #define Laveusecolonne
-#define BalayeuseMeca // pour detecter le niveau d'eau et le karsher
+// #define BalayeuseMeca // pour detecter le niveau d'eau et le karsher
 // #define CiterneTanger
-// #define LaveuseBacTanger
+#define LaveuseBacTanger
 // #define BOM
 
 
@@ -37,7 +37,7 @@
 
 
 
-uint8_t receiverMAC[] = {0x9c,0x9c,0x1f,0xe2,0x81,0x7c}; // TracCar MAC Adress 9c:9c:1f:e2:81:7c
+uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9d,0x6e,0x1c}; // TracCar MAC Adress 4c:11:ae:9d:6e:1c
 bool SendOK=false;
 
 
@@ -366,7 +366,7 @@ void loop() {
     }
   Mkarsher=Mkarsher/compK;
   Serial.println(Mkarsher);
-  if(Mkarsher>=520 && Mkarsher<1000){
+  if(Mkarsher>=515 && Mkarsher<1100){
     Serial.println("Karsher ON");
     bus.PD1='1';
   }else{
@@ -762,7 +762,7 @@ void loop() {
     }
   Mkarsher=Mkarsher/compK;
   Serial.println(Mkarsher);
-  if(Mkarsher>800 && Mkarsher<1100){
+  if(Mkarsher>800 && Mkarsher<1000){
     Serial.println("Karsher ON");
     bus.PD1='1';
   }else{
