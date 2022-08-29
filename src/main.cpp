@@ -6,7 +6,8 @@
 #include "esp_task_wdt.h"
 #include <driver/dac.h>
 
-
+// #define test
+// #define Test2
 
 
 #define debug
@@ -15,14 +16,15 @@
 
 
 
-// #define test
-// #define Test2
+
+
+// #define NiveauEau // commenti had la ligne ila kanti ghadi detecter niveau dial lma b la carte powerdetectV3
 
 // #define Laveusecolonne
-// #define BalayeuseMeca
+#define BalayeuseMeca
 // #define CiterneTanger
 // #define LaveuseBacTanger
-#define BOM
+// #define BOM
 // #define BenneSat
 
 
@@ -774,6 +776,9 @@ void loop() {
   check=CheckVoltage(OPA,1);
   if(check) Serial.println("Ouverture de la Porte arrière ON"); else Serial.println("Ouverture de la Porte arrière OFF");
 
+  #ifdef NiveauEau
+
+
   int compN=0;
   #ifdef Sensor3V
   for(int i=0;i<30;i++){
@@ -801,6 +806,8 @@ void loop() {
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
 
   bus.CoolantTemp=Mwaterlv;
+
+  #endif
   
 
   #ifdef debug
@@ -820,13 +827,15 @@ void loop() {
     send=true;
   }
 
-
+  #ifdef NiveauEau
   int deltaLv;
   deltaLv=Mwaterlv-refWaterLV;
   if(abs(deltaLv)>200){
     refWaterLV=Mwaterlv;
     send=true;
   }
+
+  #endif
 
   if(send){
     send=false;
