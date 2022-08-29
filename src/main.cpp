@@ -6,8 +6,8 @@
 #include "esp_task_wdt.h"
 #include <driver/dac.h>
 
-// #define test
-// #define Test2
+#define test1
+#define Test2
 
 
 #define debug
@@ -859,7 +859,7 @@ void loop() {
   
   #endif
 
-#ifdef test
+#ifdef test1
 
   voltage=io_1.digitalRead(BD);
   if(!voltage) bus.Nsensor[BD]='1'; else bus.Nsensor[BD]='0';
@@ -918,6 +918,40 @@ void loop() {
   voltage=io_2.digitalRead(PT);
   if(!voltage) bus.Nsensor[PT+16]='1'; else bus.Nsensor[PT+16]='0';
 
+
+  #ifdef NiveauEau
+
+
+  int compN=0;
+  #ifdef Sensor3V
+  for(int i=0;i<30;i++){
+    waterlv=analogRead(ADC_PIN);  
+    Serial.println(waterlv);
+    waterlv=waterlv*3300;
+    waterlv=waterlv/4096;
+    Serial.println(waterlv);
+    if(waterlv>=0 && waterlv<3300){
+      Mwaterlv=Mwaterlv+waterlv;
+      compN++;
+    }
+    delay(20);
+  }
+
+  Mwaterlv=Mwaterlv/compN;
+  if(Mwaterlv>=500){
+  Mwaterlv=Mwaterlv-500;
+  Mwaterlv=Mwaterlv/0.8;
+  }else{
+    Mwaterlv=0;
+    Serial.println("Water Lv is LOW");
+  }
+  #endif
+  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
+
+  bus.CoolantTemp=Mwaterlv;
+
+  #endif
+
   
 
   
@@ -936,7 +970,7 @@ void loop() {
 
 
 
-#ifdef test1
+#ifdef test2
 
   if(true){
     send=false;
