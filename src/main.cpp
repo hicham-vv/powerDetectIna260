@@ -21,15 +21,15 @@
 
 
 #define Sensor3V
-#define ARTA3601
+// #define ARTA3601
 
 
 // #define test
 
 // #define Laveusecolonne
 // #define BalayeuseMeca // pour detecter le niveau d'eau et le karsher
-// #define CiterneTanger
-#define LaveuseBacTanger
+#define CiterneTanger
+// #define LaveuseBacTanger
 // #define BOM
 
 
@@ -563,9 +563,9 @@ void loop() {
     bus.PD2='0';
   }
 
-  // waterlv=ina260_3.readBusVoltage();
-  // Mwaterlv=waterlv;
-  int comp=0;
+  waterlv=ina260_3.readBusVoltage();
+  Mwaterlv=waterlv;
+  int comp=1;
   // #ifdef Sensor5V
   // for(int i=0;i<14;i++){
   //   waterlv=ina260_3.readBusVoltage();
@@ -590,24 +590,19 @@ void loop() {
       Mwaterlv=Mwaterlv+waterlv;
       comp++;
     }
-    delay(20);
+    delay(50);
   }
   Mwaterlv=Mwaterlv/comp;
   // Serial.print("Moyenne=");Serial.println(Mwaterlv);
-  // if(Mwaterlv>520){
-  // Mwaterlv=Mwaterlv*2500;
-  // Mwaterlv=Mwaterlv/2500;
-  // }else{
-  //   Mwaterlv=10;
-  //   Serial.print("Water Lv is LOW");
-  // }
+  if(Mwaterlv>=500){
   Mwaterlv=Mwaterlv-500;
   Mwaterlv=Mwaterlv/0.8;
-
-
+  }else{
+    Mwaterlv=0;
+    Serial.print("Water Lv is LOW");
+  }
   #endif
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
-  bus.CoolantTemp=Mwaterlv;
 
 
   if(refPD1!=bus.PD1){
