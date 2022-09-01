@@ -604,6 +604,7 @@ void loop() {
   #endif
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
 
+  bus.CoolantTemp=Mwaterlv;
 
   if(refPD1!=bus.PD1){
     refPD1=bus.PD1;
