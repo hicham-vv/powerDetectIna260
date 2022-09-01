@@ -6,8 +6,8 @@
 #include "esp_task_wdt.h"
 #include <driver/dac.h>
 
-#define test1
-#define Test2
+// #define test1
+// #define Test2
 
 
 #define debug
