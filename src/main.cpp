@@ -779,11 +779,11 @@ void loop() {
   #ifdef NiveauEau
 
 
-  int compN=0;
+  int compN=1;
   #ifdef Sensor3V
   for(int i=0;i<30;i++){
     waterlv=analogRead(ADC_PIN);  
-    Serial.println(waterlv);
+    // Serial.println(waterlv);
     waterlv=waterlv*3300;
     waterlv=waterlv/4096;
     Serial.println(waterlv);
@@ -791,10 +791,11 @@ void loop() {
       Mwaterlv=Mwaterlv+waterlv;
       compN++;
     }
-    delay(20);
+    delay(50);
   }
 
   Mwaterlv=Mwaterlv/compN;
+  // Serial.print("Moyenne=");Serial.println(Mwaterlv);
   if(Mwaterlv>=500){
   Mwaterlv=Mwaterlv-500;
   Mwaterlv=Mwaterlv/0.8;
@@ -830,7 +831,7 @@ void loop() {
   #ifdef NiveauEau
   int deltaLv;
   deltaLv=Mwaterlv-refWaterLV;
-  if(abs(deltaLv)>200){
+  if(abs(deltaLv)>150){
     refWaterLV=Mwaterlv;
     send=true;
   }
