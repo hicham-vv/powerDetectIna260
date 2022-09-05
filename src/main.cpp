@@ -17,7 +17,6 @@
 
 
 
-
 // #define NiveauEau // commenti had la ligne ila kanti ghadi detecter niveau dial lma b la carte powerdetectV3
 
 // #define Laveusecolonne
@@ -1031,14 +1030,15 @@ bool CheckVoltage(uint8_t pos, uint8_t sx){
   uint8_t compteur=0;
   // check if SX 1 or SX2
   if(sx==1){
-    for(int i=0;i<7;i++){
+    for(int i=0;i<15;i++){
       voltage=io_1.digitalRead(pos);
       if(!voltage){
         compteur++;
       }
+      delay(5);
     }
 
-    if(compteur>3){
+    if(compteur>8){
       bus.Nsensor[pos]='1';
       return true;
     }else{
@@ -1048,13 +1048,14 @@ bool CheckVoltage(uint8_t pos, uint8_t sx){
   }
 
   if(sx==2){
-    for(int i=0;i<7;i++){
+    for(int i=0;i<15;i++){
       voltage=io_2.digitalRead(pos);
       if(!voltage){
         compteur++;
       }
+      delay(5);
     }
-    if(compteur>3){
+    if(compteur>8){
       bus.Nsensor[pos+16]='1';
       return true;
     }else{
