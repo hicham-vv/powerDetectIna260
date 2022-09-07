@@ -402,6 +402,9 @@ message bus; // créer une structure message nommé bus
 
 bool voltage=false;
 
+uint8_t iAMA=0; // pour l'asspirateur Manuel Arriere
+
+
 
 char refPD[cSize+1]= {'0','0','0','0','0','0','0','0',
                       '0','0','0','0','0','0','0','0',
@@ -754,7 +757,7 @@ void loop() {
     check=CheckVoltage(BG,1);
   if(check) Serial.println("Brosse Gauche ON"); else Serial.println("Brosse Gauche OFF");
 
-    check=CheckVoltage(AG,1);
+  check=CheckVoltage(AG,1);
   if(check) Serial.println("Aspirateur Gauche ON"); else Serial.println("Aspirateur Gauche OFF");
 
   check=CheckVoltage(BC,1);
@@ -766,17 +769,24 @@ void loop() {
   check=CheckVoltage(LC,1);
   if(check) Serial.println("levée caisson ON"); else Serial.println("levée caisson OFF");
 
-  uint8_t iAM=0;
-  for(int i=0;i<10;i++){
-    check=CheckVoltage(AMA,1);
-    if(check){
-      iAM++;
-    }
-    delay(100);
+  uint8_t compteurAMA=0; 
+  for(int i=0;i<40;i++){
+      voltage=io_1.digitalRead(AMA);
+      if(!voltage){
+        compteurAMA++;
+      }
+      delay(5);
   }
-  if(iAM>7){
+  if(compteurAMA>35){
+    iAMA++;
+  }else{
+    iAMA=0;
+  }
+
+  if(iAMA>2){
     bus.Nsensor[AMA]='1';
     Serial.println("Aspirateur Manuel Arriere ON");
+    iAMA=0;
   }else{
     bus.Nsensor[AMA]='0';
     Serial.println("Aspirateur Manuel Arriere OFF");
@@ -1044,7 +1054,7 @@ bool CheckVoltage(uint8_t pos, uint8_t sx){
   uint8_t compteur=0;
   // check if SX 1 or SX2
   if(sx==1){
-    for(int i=0;i<20;i++){
+    for(int i=0;i<30;i++){
       voltage=io_1.digitalRead(pos);
       if(!voltage){
         compteur++;
@@ -1052,7 +1062,7 @@ bool CheckVoltage(uint8_t pos, uint8_t sx){
       delay(5);
     }
 
-    if(compteur>15){
+    if(compteur>25){
       bus.Nsensor[pos]='1';
       return true;
     }else{
@@ -1062,14 +1072,14 @@ bool CheckVoltage(uint8_t pos, uint8_t sx){
   }
 
   if(sx==2){
-    for(int i=0;i<20;i++){
+    for(int i=0;i<30;i++){
       voltage=io_2.digitalRead(pos);
       if(!voltage){
         compteur++;
       }
       delay(5);
     }
-    if(compteur>15){
+    if(compteur>25){
       bus.Nsensor[pos+16]='1';
       return true;
     }else{
