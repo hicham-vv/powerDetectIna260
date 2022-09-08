@@ -22,13 +22,14 @@
 
 #define Sensor3V
 // #define ARTA3601
+#define ARTA3701
 
 
 // #define test
 
-// #define Laveusecolonne
+#define Laveusecolonne
 // #define BalayeuseMeca // pour detecter le niveau d'eau et le karsher
-#define CiterneTanger
+// #define CiterneTanger
 // #define LaveuseBacTanger
 // #define BOM
 
@@ -224,11 +225,12 @@ void loop() {
       Serial.println(karsher);
       Mkarsher=Mkarsher+karsher;
       compK++;
+      delay(50);
     }
   Mkarsher=Mkarsher/compK;
   Serial.println(Mkarsher);
   #endif
-
+  #ifndef ARTA3701
   if(Mkarsher>600){
     Serial.println("Karsher ON");
     bus.PD1='1';
@@ -236,6 +238,16 @@ void loop() {
     Serial.println("Karsher OFF");
     bus.PD1='0';
   }
+  #endif
+  #ifdef ARTA3701
+  if(Mkarsher>1000 && Mkarsher<2000 ){
+    Serial.println("Karsher ON");
+    bus.PD1='1';
+  }else{
+    Serial.println("Karsher OFF");
+    bus.PD1='0';
+  }
+  #endif
 
   compteur=0;
   for(int i=0;i<10;i++){
