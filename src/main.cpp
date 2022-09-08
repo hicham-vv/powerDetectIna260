@@ -225,7 +225,7 @@ void loop() {
       Serial.println(karsher);
       Mkarsher=Mkarsher+karsher;
       compK++;
-      delay(50);
+      delay(100);
     }
   Mkarsher=Mkarsher/compK;
   Serial.println(Mkarsher);
