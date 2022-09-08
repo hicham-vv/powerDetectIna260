@@ -786,7 +786,7 @@ void loop() {
   if(iAMA>2){
     bus.Nsensor[AMA]='1';
     Serial.println("Aspirateur Manuel Arriere ON");
-    iAMA=0;
+    iAMA=1;
   }else{
     bus.Nsensor[AMA]='0';
     Serial.println("Aspirateur Manuel Arriere OFF");
