@@ -777,16 +777,9 @@ void loop() {
       }
       delay(5);
   }
-  if(compteurAMA>35){
-    iAMA++;
-  }else{
-    iAMA=0;
-  }
-
-  if(iAMA>2){
+  if(compteurAMA>30){
     bus.Nsensor[AMA]='1';
     Serial.println("Aspirateur Manuel Arriere ON");
-    iAMA=1;
   }else{
     bus.Nsensor[AMA]='0';
     Serial.println("Aspirateur Manuel Arriere OFF");
