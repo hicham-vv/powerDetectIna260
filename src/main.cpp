@@ -282,18 +282,16 @@ void loop() {
     LavageBac=ina260_2.readBusVoltage();
   }
 
-  // waterlv=ina260_3.readBusVoltage();
-  // Mwaterlv=waterlv;
   int comp=0;
   #ifdef Sensor3V
-  for(int i=0;i<100;i++){
+  for(int i=0;i<50;i++){
     waterlv=ina260_3.readBusVoltage();
     // Serial.println(waterlv);
     if(waterlv>490 && waterlv<2600){
       Mwaterlv=Mwaterlv+waterlv;
       comp++;
     }
-    delay(20);
+    delay(10);
   }
   if(comp!=0){
     Mwaterlv=Mwaterlv/comp;
