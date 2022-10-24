@@ -2,6 +2,7 @@
 #include <esp_now.h>
 #include <Adafruit_INA260.h>
 #include <math.h>
+#include "esp_task_wdt.h"
 
 #ifdef ESP32
   #include <WiFi.h>
@@ -31,9 +32,9 @@
 // #define TestDinamyqueKarsher
 
 
-#define Laveusecolonne
+// #define Laveusecolonne
 // #define BalayeuseMeca // pour detecter le niveau d'eau et le karsher
-// #define CiterneTanger
+#define CiterneTanger
 // #define LaveuseBacTanger
 // #define BOM
 // #define COPAG
@@ -218,6 +219,8 @@ void setup() {
 
 void loop() {
 
+  esp_task_wdt_init(30, true); //enable panic so ESP32 restarts
+  esp_task_wdt_add(NULL); //add current thread to WDT watch
 
   #ifdef Laveusecolonne
 
@@ -276,15 +279,9 @@ void loop() {
     Serial.println("Lavage de BAC OFF");
     bus.PD2='0';
   }
-  LavageBac=ina260_2.readBusVoltage();
-  unsigned long prevms=millis();
-  while((LavageBac>TensionSeuil) && ((millis()-prevms)<15000)){
-    LavageBac=ina260_2.readBusVoltage();
-  }
 
   int comp=0;
-  #ifdef Sensor3V
-  for(int i=0;i<50;i++){
+  for(int i=0;i<80;i++){
     waterlv=ina260_3.readBusVoltage();
     // Serial.println(waterlv);
     if(waterlv>490 && waterlv<2600){
@@ -305,7 +302,6 @@ void loop() {
     Mwaterlv=0;
     Serial.print("Water Lv is LOW");
   }
-  #endif
 
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
 
@@ -435,45 +431,27 @@ void loop() {
     Serial.println("Lavage de BAC OFF");
     bus.PD2='0';
   }
-  // LavageBac=ina260_2.readBusVoltage();
-  // unsigned long prevms=millis();
-  // while((LavageBac>TensionSeuil) && ((millis()-prevms)<15000)){
-  //   LavageBac=ina260_2.readBusVoltage();
-  // }
 
-  waterlv=ina260_3.readBusVoltage();
-  Mwaterlv=waterlv;
-  int comp=1;
-  // #ifdef ARTA3605
-  // for(int i=0;i<20;i++){
-  //   waterlv=ina260_3.readBusVoltage();
-  //   // Serial.println(waterlv);
-  //   if(waterlv>0 && waterlv<5300){
-  //     Mwaterlv=Mwaterlv+waterlv;
-  //     comp++;
-  //   }
-  // }
-  // Mwaterlv=Mwaterlv/comp;
-  // // Serial.print("Moyenne=");Serial.println(Mwaterlv);
-  // Mwaterlv=Mwaterlv*1500;
-  // Mwaterlv=Mwaterlv/5000;
-  // // Mwaterlv=Mwaterlv+600;
-  // #endif
+
+  int comp=0;
   #ifdef Sensor3V
-  for(int i=0;i<20;i++){
+  for(int i=0;i<80;i++){
     waterlv=ina260_3.readBusVoltage();
     // Serial.println(waterlv);
     if(waterlv>490 && waterlv<2600){
       Mwaterlv=Mwaterlv+waterlv;
       comp++;
     }
-    delay(50);
+    delay(10);
   }
-  Mwaterlv=Mwaterlv/comp;
-  // Serial.print("Moyenne=");Serial.println(Mwaterlv);
+  if(comp!=0){
+    Mwaterlv=Mwaterlv/comp;
+  }else{
+    Mwaterlv=0;
+  }
   if(Mwaterlv>=500){
   Mwaterlv=Mwaterlv-500;
-  Mwaterlv=Mwaterlv/0.8;
+    Mwaterlv=Mwaterlv/0.8;
   }else{
     Mwaterlv=0;
     Serial.print("Water Lv is LOW");
@@ -491,7 +469,7 @@ void loop() {
   }
   int deltaLv;
   deltaLv=Mwaterlv-refWaterLV;
-  if(abs(deltaLv)>150){
+  if(abs(deltaLv)>50){
     bus.CoolantTemp=Mwaterlv;
     refWaterLV=Mwaterlv;
     send=true;
@@ -529,7 +507,6 @@ void loop() {
 
   #ifdef CiterneTanger
 
-  uint8_t compteur=0;
   int karsher=0;
   int Mkarsher=0;
   int arosseur=0;
@@ -558,7 +535,6 @@ void loop() {
     Serial.println("Karsher OFF");
     bus.PD1='0';
   }
-  compteur=0;
 
   int comA=0;
   for(int i=0;i<20;i++){
@@ -581,15 +557,14 @@ void loop() {
 
   int comp=0;
 
-  #ifdef Sensor3V
-  for(int i=0;i<100;i++){
+  for(int i=0;i<80;i++){
     waterlv=ina260_3.readBusVoltage();
     // Serial.println(waterlv);
     if(waterlv>490 && waterlv<2600){
       Mwaterlv=Mwaterlv+waterlv;
       comp++;
     }
-    delay(20);
+    delay(10);
   }
   if(comp!=0){
     Mwaterlv=Mwaterlv/comp;
@@ -597,13 +572,12 @@ void loop() {
     Mwaterlv=0;
   }
   if(Mwaterlv>=500){
-  Mwaterlv=Mwaterlv-500;
+    Mwaterlv=Mwaterlv-500;
     Mwaterlv=Mwaterlv/0.8;
   }else{
     Mwaterlv=0;
     Serial.print("Water Lv is LOW");
   }
-  #endif
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
 
   if(refPD1!=bus.PD1){
@@ -659,7 +633,6 @@ void loop() {
       compteur++;
     }
   }
-
   if(compteur>6){
     bus.PD1='1';
     #ifdef debug
@@ -671,7 +644,6 @@ void loop() {
     #endif
     bus.PD1='0';
   }
-
 
   compteur=0;
   for(int i=0;i<10;i++){
@@ -693,7 +665,6 @@ void loop() {
     #endif
   }
 
-
   compteur=0;
   for(int i=0;i<10;i++){
     voltage=ina260_3.readBusVoltage();
@@ -711,6 +682,7 @@ void loop() {
     Serial.println("Cycle LC OFF");
   }
 
+
   if(refPD1!=bus.PD1){
     refPD1=bus.PD1;
     send=true;
@@ -726,15 +698,28 @@ void loop() {
   if(send){
     send=false;
     for(int i=0;i<3;i++){
+      #ifdef debug
+      Serial.println("Done");
+      Serial.print(bus.PD1);
+      Serial.print("*");
+      Serial.print(bus.PD2);
+      Serial.print("*");
+      Serial.println(bus.PD3);
+      #endif
       sendData();
-      // delay(7000);
+      delay(2500);
       if(SendOK){
         blinkLed(500,25);
         break;
       }
+      else{
+        delay(500);
+      }
     }
   }
-  delay(3000);
+  delay(1000);
+
+
   #endif
 
   #ifdef BalayeuseMeca
@@ -878,6 +863,9 @@ void loop() {
   delay(2000);
 
   #endif
+
+
+  esp_task_wdt_reset();
 }
 
 
