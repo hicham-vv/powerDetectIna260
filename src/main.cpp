@@ -15,6 +15,8 @@
 
 
 
+// #define test
+// #define TestDinamyqueKarsher
 
 
 #define debug
@@ -25,16 +27,15 @@
 
 #define Sensor3V
 // #define ARTA3601
-// #define ARTA3701
 
 
-// #define test
-// #define TestDinamyqueKarsher
 
 
-// #define Laveusecolonne
+// #define DynamiqueKarsher
+
+#define Laveusecolonne
 // #define BalayeuseMeca // pour detecter le niveau d'eau et le karsher
-#define CiterneTanger
+// #define CiterneTanger
 // #define LaveuseBacTanger
 // #define BOM
 // #define COPAG
@@ -44,7 +45,7 @@
 
 
 
-uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9d,0x6e,0xa4}; // TracCar MAC Adress 4c:11:ae:9d:6e:a4
+uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9d,0x6e,0xc0}; // TracCar MAC Adress  4c:11:ae:9d:6e:c0
 
 
 
@@ -245,6 +246,7 @@ void loop() {
   Serial.print("Mkarsher=");
   Serial.println(Mkarsher);
 
+  #ifdef  DynamiqueKarsher
   if(Mkarsher<700){
     Serial.println("Karsher OFF");
     bus.PD1='0';
@@ -261,6 +263,19 @@ void loop() {
       bus.PD1='0';
     }
   }
+  #else
+    if(Mkarsher>700){
+    Serial.println("Karsher ON");
+    bus.PD1='1';
+    }
+    if(Mkarsher<=700){
+      Serial.println("Karsher OFF");
+      bus.PD1='0';
+    }
+  #endif
+
+
+
 
 
   compteur=0;
@@ -284,7 +299,7 @@ void loop() {
   for(int i=0;i<80;i++){
     waterlv=ina260_3.readBusVoltage();
     // Serial.println(waterlv);
-    if(waterlv>490 && waterlv<2600){
+    if(waterlv>490 && waterlv<3000){
       Mwaterlv=Mwaterlv+waterlv;
       comp++;
     }
