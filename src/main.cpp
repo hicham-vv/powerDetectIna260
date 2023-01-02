@@ -15,27 +15,28 @@
 
 
 
-// #define test
-// #define TestDinamyqueKarsher
+
 
 
 #define debug
+
+#define DynamiqueKarsher // Define had la ligne fin ikon l karsher Dynamique, sinon  desactiviha 
+
 #define BusVoltage
 
-// #define Sensor5V
+
 
 
 #define Sensor3V
-// #define ARTA3601
 
 
 
+// #define test
+// #define TestDinamyqueKarsher
 
-// #define DynamiqueKarsher
-
-#define Laveusecolonne
+// #define Laveusecolonne
 // #define BalayeuseMeca // pour detecter le niveau d'eau et le karsher
-// #define CiterneTanger
+#define CiterneTanger
 // #define LaveuseBacTanger
 // #define BOM
 // #define COPAG
@@ -374,27 +375,7 @@ void loop() {
   int Mwaterlv=0;
 
 
-  #ifdef Sensor3V
 
-  #ifdef ARTA3601
-  int compK=0;
-  for(int i=0;i<20;i++){
-    karsher=ina260_1.readBusVoltage();
-      Serial.println(karsher);
-      Mkarsher=Mkarsher+karsher;
-      compK++;
-      delay(50);
-    }
-  Mkarsher=Mkarsher/compK;
-  Serial.println(Mkarsher);
-  if(Mkarsher>=515 && Mkarsher<1100){
-    Serial.println("Karsher ON");
-    bus.PD1='1';
-  }else{
-    Serial.println("Karsher OFF");
-    bus.PD1='0';
-  }
-  #else
 
   for(int i=0;i<20;i++){
     karsher=ina260_1.readBusVoltage();
@@ -426,9 +407,7 @@ void loop() {
     }
   }
 
-  #endif
 
-  #endif
 
   compteur=0;
   for(int i=0;i<10;i++){
@@ -528,28 +507,47 @@ void loop() {
   int Marosseur=0;
   int waterlv=0;
   int Mwaterlv=0;
+  int compteur=0;
 
-  // A verifier Seuil  du Karsher 
-  int compK=0;
-  #ifdef Sensor3V
   for(int i=0;i<20;i++){
     karsher=ina260_1.readBusVoltage();
-      Serial.println(karsher);
-      Mkarsher=Mkarsher+karsher;
-      compK++;
-      delay(50);
-    }
-  Mkarsher=Mkarsher/compK;
-  Serial.println(Mkarsher);
-  #endif
+    Mkarsher=Mkarsher+karsher;
+    // Serial.println(karsher);
+    compteur++;
+    delay(10);
+  }
 
-  if(Mkarsher>600){
-    Serial.println("Karsher ON");
-    bus.PD1='1';
-  }else{
+  Mkarsher=Mkarsher/compteur;
+  Serial.print("Mkarsher=");
+  Serial.println(Mkarsher);
+
+  #ifdef  DynamiqueKarsher
+  if(Mkarsher<700){
     Serial.println("Karsher OFF");
     bus.PD1='0';
+    MkarsherPrec=Mkarsher;
+  }else{
+    int16_t deltaMean=Mkarsher-MkarsherPrec;
+    Serial.println(deltaMean);
+    if(deltaMean<-100){
+      Serial.println("Karsher ON");
+      bus.PD1='1';
+    }else{
+      MkarsherPrec=Mkarsher;
+      Serial.println("Karsher OFF");
+      bus.PD1='0';
+    }
   }
+  #else
+    if(Mkarsher>700){
+    Serial.println("Karsher ON");
+    bus.PD1='1';
+    }
+    if(Mkarsher<=700){
+      Serial.println("Karsher OFF");
+      bus.PD1='0';
+    }
+  #endif
 
   int comA=0;
   for(int i=0;i<20;i++){
@@ -562,7 +560,7 @@ void loop() {
   Marosseur=Marosseur/comA;
   Serial.println(Marosseur);
 
-  if(Marosseur>550){
+  if(Marosseur>570){
     Serial.println("Arosseur devant ON");
     bus.PD2='1';
   }else{
@@ -605,7 +603,7 @@ void loop() {
   }
   int deltaLv;
   deltaLv=Mwaterlv-refWaterLV;
-  if(abs(deltaLv)>50){
+  if(abs(deltaLv)>100){
     bus.CoolantTemp=Mwaterlv;
     refWaterLV=Mwaterlv;
     send=true;
@@ -834,11 +832,11 @@ void loop() {
   #ifdef test
   int voltage1=ina260_1.readBusVoltage();
   Serial.print("Port1=");Serial.println(voltage1);
-  // int voltage2=ina260_2.readBusVoltage();
-  // Serial.print("Port2=");Serial.println(voltage2);
-  // int voltage3=ina260_3.readBusVoltage();
-  // Serial.print("Port3=");Serial.println(voltage3);
-  // Serial.println("");
+  int voltage2=ina260_2.readBusVoltage();
+  Serial.print("Port2=");Serial.println(voltage2);
+  int voltage3=ina260_3.readBusVoltage();
+  Serial.print("Port3=");Serial.println(voltage3);
+  Serial.println("");
   delay(50);
   #endif
 
