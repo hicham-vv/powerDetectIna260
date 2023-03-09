@@ -339,7 +339,7 @@ void loop() {
 
   if(send){
     send=false;
-    for(int i=0;i<3;i++){
+    for(int i=0;i<5;i++){
       #ifdef debug
       Serial.println("Done");
       Serial.print(bus.PD1);
@@ -348,13 +348,13 @@ void loop() {
       Serial.print(bus.CoolantTemp);
       #endif
       sendData();
-      delay(2500);
+      delay(3000);
       if(SendOK){
         blinkLed(500,25);
         break;
       }
       else{
-        delay(500);
+        delay(1500);
       }
     }
   }
@@ -471,7 +471,7 @@ void loop() {
 
   if(send){
     send=false;
-    for(int i=0;i<3;i++){
+    for(int i=0;i<5;i++){
       #ifdef debug
       Serial.println("Done");
       Serial.print(bus.PD1);
@@ -480,13 +480,13 @@ void loop() {
       Serial.print(bus.CoolantTemp);
       #endif
       sendData();
-      delay(2500);
+      delay(3000);
       if(SendOK){
         blinkLed(500,25);
         break;
       }
       else{
-        delay(500);
+        delay(1500);
       }
     }
   }
@@ -611,7 +611,7 @@ void loop() {
 
   if(send){
     send=false;
-    for(int i=0;i<3;i++){
+    for(int i=0;i<5;i++){
       #ifdef debug
       Serial.println("Done");
       Serial.print(bus.PD1);
@@ -620,9 +620,9 @@ void loop() {
       Serial.print(bus.CoolantTemp);
       #endif
       sendData();
-      delay(2500);
+      delay(3000);
       if(SendOK){
-        blinkLed(500,25);
+        blinkLed(1500,25);
         break;
       }
       else{
@@ -710,7 +710,7 @@ void loop() {
   }
   if(send){
     send=false;
-    for(int i=0;i<3;i++){
+    for(int i=0;i<5;i++){
       #ifdef debug
       Serial.println("Done");
       Serial.print(bus.PD1);
@@ -720,13 +720,13 @@ void loop() {
       Serial.println(bus.PD3);
       #endif
       sendData();
-      delay(2500);
+      delay(3000);
       if(SendOK){
         blinkLed(500,25);
         break;
       }
       else{
-        delay(500);
+        delay(1500);
       }
     }
   }
@@ -808,7 +808,7 @@ void loop() {
 
   if(send){
     send=false;
-    for(int i=0;i<3;i++){
+    for(int i=0;i<5;i++){
       #ifdef debug
       Serial.println("Done");
       Serial.print(bus.PD1);
@@ -816,13 +816,13 @@ void loop() {
       Serial.print(bus.CoolantTemp);
       #endif
       sendData();
-      delay(2500);
+      delay(3000);
       if(SendOK){
         blinkLed(500,25);
         break;
       }
       else{
-        delay(500);
+        delay(1500);
       }
     }
   }
@@ -975,7 +975,7 @@ void loop() {
 
   if(send){
     send=false;
-    for(int i=0;i<3;i++){
+    for(int i=0;i<5;i++){
       #ifdef debug
       Serial.println("Done");
       Serial.print(bus.PD1);
@@ -984,13 +984,13 @@ void loop() {
       Serial.print(bus.CoolantTemp);
       #endif
       sendData();
-      delay(2500);
+      delay(3000);
       if(SendOK){
         blinkLed(500,25);
         break;
       }
       else{
-        delay(500);
+        delay(1500);
       }
     }
   }
