@@ -20,11 +20,10 @@
 // #define BenneSat
 
 
-uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x6e, 0x90}; // Master MAC Adress 4c:11:ae:9d:6e:90
-
+uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x6e, 0x54}; // Master MAC Adress 4c:11:ae:9d:6e:54
 
 #ifdef Repeater
-uint8_t CanSenderMac[] = {0x30, 0xc6, 0xf7, 0x30, 0x95, 0x90}; // Adress CAN ila ila definiti Repeater 30:C6:F7:30:95:90
+uint8_t CanSenderMac[] = {0x30, 0xc6, 0xf7, 0x30, 0x96, 0x98}; // Adress CAN ila ila definiti Repeater 30:C6:F7:30:96:98
 #endif
 
 
@@ -123,7 +122,6 @@ void blinkLed(uint16_t time_Out,uint16_t ms);
     #ifdef debug
     Serial.printf("Transmitter MacAddr: %02x:%02x:%02x:%02x:%02x:%02x \n", senderMac[0], senderMac[1], senderMac[2], senderMac[3], senderMac[4], senderMac[5]);
     #endif
-
     uint8_t iCan=0;
     for(int i=0;i<6;i++){
       if(senderMac[i]==CanSenderMac[i]){
@@ -276,6 +274,7 @@ void setup() {
 void loop() {
 
   uint8_t compteur=0;
+  
   for(int i=0;i<4;i++){
     voltage=io_1.digitalRead(AP);
     if(!voltage){
@@ -383,9 +382,7 @@ void loop() {
     #endif
     send=true;
   }
-  for(int i =0;i<cSize;i++){
 
-  }
   if(send){
     send=false;
     #ifdef debug
