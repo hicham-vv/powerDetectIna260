@@ -8,7 +8,7 @@
 #ifdef ESP32
   #include <WiFi.h>
 #endif
-
+#include <esp_wifi.h>
 
 
 
@@ -20,10 +20,13 @@
 // #define BenneSat
 
 
-uint8_t receiverMAC[] = {0x4c, 0x11, 0xae, 0x9d, 0x6e, 0x54}; // Master MAC Adress 4c:11:ae:9d:6e:54
+uint8_t selfMACAddress[] = {0x00, 0xBB, 0x00, 0x00, 0x53, 0x13}; // hadi bach ndefiniw l MAC adress dial la carte li an
+
+
+uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x53, 0x13}; // Master MAC Adress 4c:11:ae:9d:6e:54
 
 #ifdef Repeater
-uint8_t CanSenderMac[] = {0x30, 0xc6, 0xf7, 0x30, 0x96, 0x98}; // Adress CAN ila ila definiti Repeater 30:C6:F7:30:96:98
+uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x53, 0x13}; // Adress CAN ila ila definiti Repeater 30:C6:F7:30:96:98
 #endif
 
 
@@ -235,6 +238,7 @@ void setup() {
   esp_task_wdt_reset();
 
   WiFi.mode(WIFI_STA); // set the wifi mode as Station
+  esp_wifi_set_mac(WIFI_IF_STA, &selfMACAddress[0]);
   if (esp_now_init() != ESP_OK) {
     #ifdef debug
     Serial.println("ESP_Now init failed...");
