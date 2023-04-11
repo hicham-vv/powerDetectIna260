@@ -5,26 +5,55 @@
 #include "SparkFunSX1509.h"
 #include "esp_task_wdt.h"
 #include <driver/dac.h>
+#ifdef ESP32
+  #include <WiFi.h>
+#endif
+#include <esp_wifi.h>
 
-// #define test1
-// #define Test2
+// #define TangerProjet // Define had la ligne b nessba l projet dial Tanger , l cablage machi la meme chose
 
+#define Repeater // define had la ligne fin tanabghiw nwasslo data dial la carte TracCAN
 
 #define debug
-#define BusVoltage
-#define Sensor3V
 
+#define BOM
+// #define BenneSat
 
-
-
+// #define BalayeuseMeca
 // #define NiveauEau // commenti had la ligne ila kanti ghadi detecter niveau dial lma b la carte powerdetectV3
 
-// #define Laveusecolonne
-#define BalayeuseMeca
-// #define CiterneTanger
-// #define LaveuseBacTanger
-// #define BOM
-// #define BenneSat
+// #define ESPnowTest // Pour tester le fonctionnement dial ESP_NOW, crash/ porté ...
+
+
+uint8_t selfMACAddress[] = {0x00, 0xBB, 0x00, 0x00, 0x00, 0x01};
+
+
+
+uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x00, 0x01}; // Master MAC Adress 4c:11:ae:9d:6e:54
+
+#ifdef Repeater
+uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x00, 0x01}; // Adress CAN ila ila definiti Repeater 30:C6:F7:30:96:98
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 const float ADC_LUT[4096] = { 0,
@@ -308,44 +337,69 @@ const float ADC_LUT[4096] = { 0,
 
   /******** BLock SX01 ********/
 
-  #define  BD  0  // Brosse Droite
-  #define  AD  1  // Aspirateur Droite
-  #define  BG  2  // Brosse Gauche
-  #define  AG  3  // Aspirateur Gauche
-  #define  BC  4  // Brosse Centrale
-  #define  AC  5  // Aspirateur Central
+  #ifdef TangerProjet
 
-  #define  LC  7  // Levée du caisson
-  #define  AMA 8  // Aspirateur Manuel arrière
-  #define  AP  9  // Activation de la pompe
-  #define  ARD 10  // Aroseur devant
-  #define  K1  11  // Karsher 1
-  #define  K2  12  // Karsher 2
-  #define  LAB 13 // Lavage Bac
-  #define  VES 14 // Vidage d'eau sale
-  #define  OPA 15  // Ouverture de la Porte arrière
+    #define  BD  0  // Brosse Droite
+    #define  AD  1  // Aspirateur Droite
+    #define  BG  2  // Brosse Gauche
+    #define  AG  3  // Aspirateur Gauche
+    #define  BC  4  // Brosse Centrale
+    #define  AC  5  // Aspirateur Central
 
-  /******** BLock SX02 ********/
+    #define  LC  7  // Levée du caisson
+    #define  AMA 8  // Aspirateur Manuel arrière
+    #define  AP  9  // Activation de la pompe
+    #define  ARD 10  // Aroseur devant
+    #define  K1  11  // Karsher 1
+    #define  K2  12  // Karsher 2
+    #define  LAB 13 // Lavage Bac
+    #define  VES 14 // Vidage d'eau sale
+    #define  OPA 15  // Ouverture de la Porte arrière
 
-  #define  CLC 0 // Cycle LC --> 16
-  #define  COM 1 // Compactation --> 17
-  #define  PT  2 // Pousée Tablier --> 18
+    /******** BLock SX02 ********/
+
+    #define  CLC 0 // Cycle LC --> 16
+    #define  COM 1 // Compactation --> 17
+    #define  PT  2 // Pousée Tablier --> 18
+
+  #else
+
+    #define  BD  0   // Brosse Droite
+    #define  AD  1   // Aspirateur Droite
+    #define  BG  2   // Brosse Gauche
+    #define  AG  3   // Aspirateur Gauche
+    #define  BC  4   // Brosse Centrale
+    #define  AC  5   // Aspirateur Central
+    #define  LC  6   // Levée du caisson
+    #define  AMA 7   // Aspirateur Manuel arrière
+    #define  AP  8   // Activation de la pompe
+    #define  ARD 9   // Aroseur devant
+    #define  LAB 10  // Lavage Bac
+    #define  VES 11  // Vidade Eau sale
+    #define  OPA 12  // Ouverture porte arriere
+    #define  CLC 13  // Cycle LC
+    #define  COM 14  // Compactation
+    #define  PT  15  // Pousée Tablier
+
+  #endif
 
 
-#ifdef ESP32
-  #include <WiFi.h>
+
+
+
+
+
+
+
+
+
+
+#ifdef Repeater
+bool SendCandata=false;
 #endif
 
 
 
-
-
-
-
-
-
-
-uint8_t receiverMAC[] = {0x3c,0x71,0xbf,0x86,0x56,0xe0}; // TracCar MAC Adress 3c:71:bf:86:56:e0 
 bool SendOK=false; // 98:f4:ab:6b:d6:68
 
 
@@ -409,6 +463,9 @@ uint8_t iAMA=0; // pour l'asspirateur Manuel Arriere
 char refPD[cSize+1]= {'0','0','0','0','0','0','0','0',
                       '0','0','0','0','0','0','0','0',
                       '0','0','0','0','0','0','0','0'};
+char trame[cSize+1]= {'0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0'};
 int refWaterLV=0;
 bool send=false;
 
@@ -422,6 +479,38 @@ bool CheckVoltage(uint8_t pos, uint8_t sx);
 bool compareArrays(char a[], char b[], int n);
 void copyArrays(char a[], char b[], int n);
 void blinkLed(uint16_t time_Out,uint16_t ms);
+
+
+#ifdef Repeater
+  void OnDataRecv(const uint8_t * senderMac, const uint8_t *incomingData, int len) {
+    
+    memcpy(&bus, incomingData, len);
+    #ifdef debug
+    Serial.printf("Transmitter MacAddr: %02x:%02x:%02x:%02x:%02x:%02x \n", senderMac[0], senderMac[1], senderMac[2], senderMac[3], senderMac[4], senderMac[5]);
+    #endif
+    uint8_t iCan=0;
+    for(int i=0;i<6;i++){
+      if(senderMac[i]==CanSenderMac[i]){
+        iCan++;
+      }
+    }
+    if(iCan==6){
+      #ifdef debug
+      Serial.println("\n*****************CAN DATA***************\n");
+      Serial.print("Fuel Lv=");Serial.print(bus.FuelTank);Serial.println(" %");
+      Serial.print("Total Distance=");Serial.print(bus.TotalDistance);Serial.println(" Km");
+      Serial.print("Total Hours=");Serial.print(bus.TotalHours);Serial.println(" H");
+      Serial.print("Total Fuel used=");Serial.print(bus.TotalFuelused);Serial.println(" L");
+      Serial.print("Coolant Temperature=");Serial.print(bus.CoolantTemp);Serial.println(" C");
+      Serial.print("RPM=");Serial.print(bus.RPM);Serial.println(" rpm");
+      Serial.print("BrakePP=");Serial.print(bus.BrakePP);Serial.println(" %");
+      Serial.print("AccPP=");Serial.print(bus.AccPP);Serial.println(" %");
+      Serial.println("********************************\n");
+      #endif
+      SendCandata=true;
+    }
+  }
+#endif
 
 
 void sendData() {
@@ -445,14 +534,14 @@ void setup() {
   delay(500);
   esp_task_wdt_init(25, true); //enable panic so ESP32 restarts
   esp_task_wdt_add(NULL); //add current thread to WDT watch
-
   analogReadResolution(12);
 
   #ifdef debug
   Serial.begin(115200);
   while(!Serial);
   #endif
-  delay(500);
+  delay(1500);
+
   pinMode(Led_esp,OUTPUT);
 
   pinMode(Reg_Enable,OUTPUT);
@@ -491,6 +580,7 @@ void setup() {
 
   esp_task_wdt_reset();
   delay(500);
+  #ifdef TangerProjet
   if (!io_2.begin(SX1509_ADDRESS_2)){
     #ifdef debug
     Serial.println("SX1509_2 Failed to communicate.");
@@ -503,8 +593,10 @@ void setup() {
     Serial.println("SX1509_2 begin");
     #endif
   }
+  #endif
 
   // Block SX1 // 
+  #ifdef TangerProjet
   io_1.pinMode(BD, INPUT);
   io_1.pinMode(AD, INPUT);
   io_1.pinMode(BG, INPUT);
@@ -515,14 +607,9 @@ void setup() {
   io_1.pinMode(LC, INPUT);
   io_1.pinMode(AMA, INPUT);
   io_1.pinMode(AP, INPUT);
-
-  
-
   io_1.pinMode(LAB, INPUT);
   io_1.pinMode(VES, INPUT);
   io_1.pinMode(OPA, INPUT);
-
-
 
   // Block SX2 //
   io_2.pinMode(CLC, INPUT);
@@ -532,23 +619,32 @@ void setup() {
   // io_2.pinMode(4, INPUT);
   // io_2.pinMode(5, INPUT);
   // io_2.pinMode(6, INPUT);
-  
-
-
+  #else
+  io_1.pinMode(BD, INPUT);  // 0
+  io_1.pinMode(AD, INPUT);  // 1
+  io_1.pinMode(BG, INPUT);  // 2
+  io_1.pinMode(AG, INPUT);  // 3
+  io_1.pinMode(BC, INPUT);  // 4
+  io_1.pinMode(AC, INPUT);  // 5
+  io_1.pinMode(LC, INPUT);  // 6
+  io_1.pinMode(AMA, INPUT); // 7
+  io_1.pinMode(AP, INPUT);  // 8
+  io_1.pinMode(ARD, INPUT); // 9
+  io_1.pinMode(LAB, INPUT); // 10
+  io_1.pinMode(VES, INPUT); // 11
+  io_1.pinMode(OPA, INPUT); // 12
+  io_1.pinMode(CLC, INPUT); // 13
+  io_1.pinMode(COM, INPUT); // 14
+  io_1.pinMode(PT, INPUT);  // 15
+  #endif
 
   esp_task_wdt_reset();
 
-  
-
-
-
-
-
-
-
-
-
+  #ifdef debug
+  Serial.println("ESP_NOW Configuration...");
+  #endif
   WiFi.mode(WIFI_STA); // set the wifi mode as Station
+  esp_wifi_set_mac(WIFI_IF_STA, &selfMACAddress[0]);
   if (esp_now_init() != ESP_OK) {
     #ifdef debug
     Serial.println("ESP_Now init failed...");
@@ -561,6 +657,10 @@ void setup() {
     #endif
 
   }
+
+    #ifdef Repeater
+    esp_now_register_recv_cb(OnDataRecv);
+    #endif
 
     // Once ESPNow is successfully Init, we will register for Send CB to
     // get the status of Trasnmitted packet
@@ -584,410 +684,468 @@ void setup() {
 void loop() {
 
 
-  #ifdef BenneSat
-  uint8_t compteur=0;
-  for(int i=0;i<5;i++){
-    voltage=io_1.digitalRead(LC);
-    if(!voltage){
-      compteur++;
-    }
-  }
-  if(compteur>2){
-    bus.Nsensor[LC]='1';
-    #ifdef debug
-    Serial.println("Levée du caisson ON");
-    #endif
-  }else{
-    #ifdef debug
-    Serial.println("Levée du caisson OFF");
-    #endif
-    bus.Nsensor[LC]='0';
-  }
+  #ifdef TangerProjet
 
-  compteur=0;
-  for(int i=0;i<5;i++){
-    voltage=io_2.digitalRead(CLC);
-    if(!voltage){
-      compteur++;
-    }
-  }
-  if(compteur>2){
-    bus.Nsensor[CLC+16]='1';
-    #ifdef debug
-    Serial.println("Cycle LC ON");
-    #endif
-  }else{
-    bus.Nsensor[CLC+16]='0';
-    #ifdef debug
-    Serial.println("Cycle LC OFF");
-    #endif
-  }
-  
-
-  bool compare=compareArrays(refPD,bus.Nsensor,cSize);
-  if(!compare){
-    copyArrays(refPD,bus.Nsensor,cSize);
-    send=true;
-  }
-  if(send){
-    send=false;
-    #ifdef debug
-    Serial.println("\nSending Data\n");
-    #endif
-    for(int i=0;i<3;i++){
-      sendData();
-      delay(2500);
-      if(SendOK){
-        blinkLed(500,25);
-        delay(2000);
-        break;
-      }
-    }
-  }
-  #ifdef debug
-  Serial.println("*******************************");
-  #endif
-  delay(1500);
-  #endif
-
-
-  #ifdef BOM
-  uint8_t compteur=0;
-  for(int i=0;i<5;i++){
-    voltage=io_1.digitalRead(OPA);
-    if(!voltage){
-      compteur++;
-    }
-  }
-  if(compteur>2){
-    bus.Nsensor[OPA]='1';
-    #ifdef debug
-    Serial.println("Ouverture de la porte arrière ON");
-    #endif
-  }else{
-    #ifdef debug
-    Serial.println("Ouverture de la porte arrière OFF");
-    #endif
-    bus.Nsensor[OPA]='0';
-  }
-
-  compteur=0;
-  for(int i=0;i<5;i++){
-    voltage=io_2.digitalRead(CLC);
-    if(!voltage){
-      compteur++;
-    }
-  }
-  if(compteur>2){
-    bus.Nsensor[CLC+16]='1';
-    #ifdef debug
-    Serial.println("Cycle LC ON");
-    #endif
-  }else{
-    bus.Nsensor[CLC+16]='0';
-    #ifdef debug
-    Serial.println("Cycle LC OFF");
-    #endif
-  }
-
-
-  compteur=0;
-  for(int i=0;i<5;i++){
-    voltage=io_2.digitalRead(COM);
-    if(!voltage){
-      compteur++;
-    }
-  }
-  if(compteur>2){
-    bus.Nsensor[COM+16]='1';
-    #ifdef debug
-    Serial.println("Compactation ON");
-    #endif
-
-  }else{
-    bus.Nsensor[COM+16]='0';
-    #ifdef debug
-    Serial.println("Compactation OFF\n");
-    #endif
-  }
-
-  
-
-  bool compare=compareArrays(refPD,bus.Nsensor,cSize);
-  if(!compare){
-    copyArrays(refPD,bus.Nsensor,cSize);
-    send=true;
-  }
-  if(send){
-    send=false;
-    #ifdef debug
-    Serial.println("\nSending Data\n");
-    #endif
-    for(int i=0;i<3;i++){
-      sendData();
-      delay(2500);
-      if(SendOK){
-        blinkLed(500,25);
-        delay(2000);
-        break;
-      }
-    }
-  }
-  #ifdef debug
-  Serial.println("*******************************");
-  #endif
-  delay(1500);
-  #endif
-
-
-  #ifdef BalayeuseMeca
-
-  bool check=false;
-  int waterlv=0;
-  int Mwaterlv=0;
-
-
-
-  check=CheckVoltage(BD,1);
-  if(check) Serial.println("Brosse Droite ON"); else Serial.println("Brosse Droite OFF");
-
-  check=CheckVoltage(AD,1);
-  if(check) Serial.println("Aspirateur Droit ON"); else Serial.println("Aspirateur Droit OFF");
-  
-    check=CheckVoltage(BG,1);
-  if(check) Serial.println("Brosse Gauche ON"); else Serial.println("Brosse Gauche OFF");
-
-  check=CheckVoltage(AG,1);
-  if(check) Serial.println("Aspirateur Gauche ON"); else Serial.println("Aspirateur Gauche OFF");
-
-  check=CheckVoltage(BC,1);
-  if(check) Serial.println("Brosse Centrale ON"); else Serial.println("Brosse Centrale OFF");
-
-  check=CheckVoltage(AC,1);
-  if(check) Serial.println("Aspirateur Centrale ON"); else Serial.println("Aspirateur Centrale OFF");
-
-  check=CheckVoltage(LC,1);
-  if(check) Serial.println("levée caisson ON"); else Serial.println("levée caisson OFF");
-
-  uint8_t compteurAMA=0; 
-  for(int i=0;i<40;i++){
-      voltage=io_1.digitalRead(AMA);
+    #ifdef BenneSat
+    uint8_t compteur=0;
+    for(int i=0;i<5;i++){
+      voltage=io_1.digitalRead(LC);
       if(!voltage){
-        compteurAMA++;
+        compteur++;
       }
-      delay(5);
-  }
-  if(compteurAMA>30){
-    bus.Nsensor[AMA]='1';
-    Serial.println("Aspirateur Manuel Arriere ON");
-  }else{
-    bus.Nsensor[AMA]='0';
-    Serial.println("Aspirateur Manuel Arriere OFF");
-  }
-
-
-  check=CheckVoltage(AP,1);
-  if(check) Serial.println("Activation pompe ON"); else Serial.println("Activation pompe OFF");
-
-  check=CheckVoltage(OPA,1);
-  if(check) Serial.println("Ouverture de la Porte arrière ON"); else Serial.println("Ouverture de la Porte arrière OFF");
-
-  #ifdef NiveauEau
-
-
-  int compN=1;
-  #ifdef Sensor3V
-  for(int i=0;i<30;i++){
-    waterlv=analogRead(ADC_PIN);  
-    // Serial.println(waterlv);
-    waterlv=waterlv*3300;
-    waterlv=waterlv/4096;
-    Serial.println(waterlv);
-    if(waterlv>=0 && waterlv<3300){
-      Mwaterlv=Mwaterlv+waterlv;
-      compN++;
     }
-    delay(50);
-  }
+    if(compteur>2){
+      bus.Nsensor[LC]='1';
+      #ifdef debug
+      Serial.println("Levée du caisson ON");
+      #endif
+    }else{
+      #ifdef debug
+      Serial.println("Levée du caisson OFF");
+      #endif
+      bus.Nsensor[LC]='0';
+    }
 
-  Mwaterlv=Mwaterlv/compN;
-  // Serial.print("Moyenne=");Serial.println(Mwaterlv);
-  if(Mwaterlv>=500){
-  Mwaterlv=Mwaterlv-500;
-  Mwaterlv=Mwaterlv/0.8;
-  }else{
-    Mwaterlv=0;
-    Serial.println("Water Lv is LOW");
-  }
-  #endif
-  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
+    compteur=0;
+    for(int i=0;i<5;i++){
+      voltage=io_2.digitalRead(CLC);
+      if(!voltage){
+        compteur++;
+      }
+    }
+    if(compteur>2){
+      bus.Nsensor[CLC+16]='1';
+      #ifdef debug
+      Serial.println("Cycle LC ON");
+      #endif
+    }else{
+      bus.Nsensor[CLC+16]='0';
+      #ifdef debug
+      Serial.println("Cycle LC OFF");
+      #endif
+    }
+    
 
-  bus.CoolantTemp=Mwaterlv;
-
-  #endif
-  
-
-  #ifdef debug
-  Serial.println("***************Data*****************");
-  for (int i=0; i<cSize; ++i){
-    if(i==16) Serial.print("   ");
-    Serial.print(bus.Nsensor[i]);
-  }
-  Serial.println("\n************************************");
-  #endif
-
-
-
-  bool compare=compareArrays(refPD,bus.Nsensor,cSize);
-  if(!compare){
-    copyArrays(refPD,bus.Nsensor,cSize);
-    send=true;
-  }
-
-  #ifdef NiveauEau
-  int deltaLv;
-  deltaLv=Mwaterlv-refWaterLV;
-  if(abs(deltaLv)>150){
-    refWaterLV=Mwaterlv;
-    send=true;
-  }
-
-  #endif
-
-  if(send){
-    send=false;
+    bool compare=compareArrays(refPD,bus.Nsensor,cSize);
+    if(!compare){
+      copyArrays(refPD,bus.Nsensor,cSize);
+      send=true;
+    }
+    if(send){
+      send=false;
+      #ifdef debug
+      Serial.println("\nSending Data\n");
+      #endif
+      for(int i=0;i<3;i++){
+        sendData();
+        delay(2500);
+        if(SendOK){
+          blinkLed(500,25);
+          delay(2000);
+          break;
+        }
+      }
+    }
     #ifdef debug
-    Serial.println("\nSending Data\n");
+    Serial.println("*******************************");
     #endif
-    for(int i=0;i<3;i++){
-      sendData();
-      delay(2500);
-      if(SendOK){
-        blinkLed(500,25);
-        delay(2000);
-        break;
+    delay(1500);
+    #endif
+
+
+    #ifdef BOM
+    uint8_t compteur=0;
+    for(int i=0;i<5;i++){
+      voltage=io_1.digitalRead(OPA);
+      if(!voltage){
+        compteur++;
       }
     }
-  }
-  #ifdef debug
-  Serial.println("*******************************");
-  #endif
-  delay(2500);
-  
-  #endif
-
-#ifdef test1
-
-  voltage=io_1.digitalRead(BD);
-  if(!voltage) bus.Nsensor[BD]='1'; else bus.Nsensor[BD]='0';
-  
-  voltage=io_1.digitalRead(AD);
-  if(!voltage) bus.Nsensor[AD]='1'; else bus.Nsensor[AD]='0';
-
-  voltage=io_1.digitalRead(BG);
-  if(!voltage) bus.Nsensor[BG]='1'; else bus.Nsensor[BG]='0';
-
-  voltage=io_1.digitalRead(AG);
-  if(!voltage) bus.Nsensor[AG]='1'; else bus.Nsensor[AG]='0';
-
-  voltage=io_1.digitalRead(BC);
-  if(!voltage) bus.Nsensor[BC]='1'; else bus.Nsensor[BC]='0';
-
-  voltage=io_1.digitalRead(AC);
-  if(!voltage) bus.Nsensor[AC]='1'; else bus.Nsensor[AC]='0';
-
-  voltage=io_1.digitalRead(LC);
-  if(!voltage) bus.Nsensor[LC]='1'; else bus.Nsensor[LC]='0';
-
-  voltage=io_1.digitalRead(AMA);
-  if(!voltage) bus.Nsensor[AMA]='1'; else bus.Nsensor[AMA]='0';
-
-  voltage=io_1.digitalRead(AP);
-  if(!voltage) bus.Nsensor[AP]='1'; else bus.Nsensor[AP]='0';
-
-  voltage=io_1.digitalRead(ARD);
-  if(!voltage) bus.Nsensor[ARD]='1'; else bus.Nsensor[ARD]='0';
-
-  voltage=io_1.digitalRead(K1);
-  if(!voltage) bus.Nsensor[K1]='1'; else bus.Nsensor[K1]='0';
-
-  voltage=io_1.digitalRead(K2);
-  if(!voltage) bus.Nsensor[K2]='1'; else bus.Nsensor[K2]='0';
-
-  voltage=io_1.digitalRead(LAB);
-  if(!voltage) bus.Nsensor[LAB]='1'; else bus.Nsensor[LAB]='0';
-
-  voltage=io_1.digitalRead(VES);
-  if(!voltage) bus.Nsensor[VES]='1'; else bus.Nsensor[VES]='0';
-
-  voltage=io_1.digitalRead(OPA);
-  if(!voltage) bus.Nsensor[OPA]='1'; else bus.Nsensor[OPA]='0';
-
-
-  /**************************SX02************************************/
-
-  voltage=io_2.digitalRead(CLC);
-  if(!voltage) bus.Nsensor[CLC+16]='1'; else bus.Nsensor[CLC+16]='0';
-
-  voltage=io_2.digitalRead(COM);
-  if(!voltage) bus.Nsensor[COM+16]='1'; else bus.Nsensor[COM+16]='0';
-
-  voltage=io_2.digitalRead(PT);
-  if(!voltage) bus.Nsensor[PT+16]='1'; else bus.Nsensor[PT+16]='0';
-
-
-  #ifdef NiveauEau
-
-
-  int compN=0;
-  #ifdef Sensor3V
-  for(int i=0;i<30;i++){
-    waterlv=analogRead(ADC_PIN);  
-    Serial.println(waterlv);
-    waterlv=waterlv*3300;
-    waterlv=waterlv/4096;
-    Serial.println(waterlv);
-    if(waterlv>=0 && waterlv<3300){
-      Mwaterlv=Mwaterlv+waterlv;
-      compN++;
+    if(compteur>2){
+      bus.Nsensor[OPA]='1';
+      #ifdef debug
+      Serial.println("Ouverture de la porte arrière ON");
+      #endif
+    }else{
+      #ifdef debug
+      Serial.println("Ouverture de la porte arrière OFF");
+      #endif
+      bus.Nsensor[OPA]='0';
     }
-    delay(20);
-  }
 
-  Mwaterlv=Mwaterlv/compN;
-  if(Mwaterlv>=500){
-  Mwaterlv=Mwaterlv-500;
-  Mwaterlv=Mwaterlv/0.8;
-  }else{
-    Mwaterlv=0;
-    Serial.println("Water Lv is LOW");
-  }
+    compteur=0;
+    for(int i=0;i<5;i++){
+      voltage=io_2.digitalRead(CLC);
+      if(!voltage){
+        compteur++;
+      }
+    }
+    if(compteur>2){
+      bus.Nsensor[CLC+16]='1';
+      #ifdef debug
+      Serial.println("Cycle LC ON");
+      #endif
+    }else{
+      bus.Nsensor[CLC+16]='0';
+      #ifdef debug
+      Serial.println("Cycle LC OFF");
+      #endif
+    }
+
+
+    compteur=0;
+    for(int i=0;i<5;i++){
+      voltage=io_2.digitalRead(COM);
+      if(!voltage){
+        compteur++;
+      }
+    }
+    if(compteur>2){
+      bus.Nsensor[COM+16]='1';
+      #ifdef debug
+      Serial.println("Compactation ON");
+      #endif
+
+    }else{
+      bus.Nsensor[COM+16]='0';
+      #ifdef debug
+      Serial.println("Compactation OFF\n");
+      #endif
+    }
+
+    
+
+    bool compare=compareArrays(refPD,bus.Nsensor,cSize);
+    if(!compare){
+      copyArrays(refPD,bus.Nsensor,cSize);
+      send=true;
+    }
+    if(send){
+      send=false;
+      #ifdef debug
+      Serial.println("\nSending Data\n");
+      #endif
+      for(int i=0;i<3;i++){
+        sendData();
+        delay(2500);
+        if(SendOK){
+          blinkLed(500,25);
+          delay(2000);
+          break;
+        }
+      }
+    }
+    #ifdef debug
+    Serial.println("*******************************");
+    #endif
+    delay(1500);
+    #endif
+
+
+    #ifdef BalayeuseMeca
+
+    bool check=false;
+    int waterlv=0;
+    int Mwaterlv=0;
+
+
+
+    check=CheckVoltage(BD,1);
+    if(check) Serial.println("Brosse Droite ON"); else Serial.println("Brosse Droite OFF");
+
+    check=CheckVoltage(AD,1);
+    if(check) Serial.println("Aspirateur Droit ON"); else Serial.println("Aspirateur Droit OFF");
+    
+      check=CheckVoltage(BG,1);
+    if(check) Serial.println("Brosse Gauche ON"); else Serial.println("Brosse Gauche OFF");
+
+    check=CheckVoltage(AG,1);
+    if(check) Serial.println("Aspirateur Gauche ON"); else Serial.println("Aspirateur Gauche OFF");
+
+    check=CheckVoltage(BC,1);
+    if(check) Serial.println("Brosse Centrale ON"); else Serial.println("Brosse Centrale OFF");
+
+    check=CheckVoltage(AC,1);
+    if(check) Serial.println("Aspirateur Centrale ON"); else Serial.println("Aspirateur Centrale OFF");
+
+    check=CheckVoltage(LC,1);
+    if(check) Serial.println("levée caisson ON"); else Serial.println("levée caisson OFF");
+
+    uint8_t compteurAMA=0; 
+    for(int i=0;i<40;i++){
+        voltage=io_1.digitalRead(AMA);
+        if(!voltage){
+          compteurAMA++;
+        }
+        delay(5);
+    }
+    if(compteurAMA>30){
+      bus.Nsensor[AMA]='1';
+      Serial.println("Aspirateur Manuel Arriere ON");
+    }else{
+      bus.Nsensor[AMA]='0';
+      Serial.println("Aspirateur Manuel Arriere OFF");
+    }
+
+
+    check=CheckVoltage(AP,1);
+    if(check) Serial.println("Activation pompe ON"); else Serial.println("Activation pompe OFF");
+
+    check=CheckVoltage(OPA,1);
+    if(check) Serial.println("Ouverture de la Porte arrière ON"); else Serial.println("Ouverture de la Porte arrière OFF");
+
+    #ifdef NiveauEau
+
+
+    int compN=1;
+    for(int i=0;i<30;i++){
+      waterlv=analogRead(ADC_PIN);  
+      // Serial.println(waterlv);
+      waterlv=waterlv*3300;
+      waterlv=waterlv/4096;
+      Serial.println(waterlv);
+      if(waterlv>=0 && waterlv<3300){
+        Mwaterlv=Mwaterlv+waterlv;
+        compN++;
+      }
+      delay(50);
+    }
+
+    Mwaterlv=Mwaterlv/compN;
+    // Serial.print("Moyenne=");Serial.println(Mwaterlv);
+    if(Mwaterlv>=500){
+    Mwaterlv=Mwaterlv-500;
+    Mwaterlv=Mwaterlv/0.8;
+    }else{
+      Mwaterlv=0;
+      Serial.println("Water Lv is LOW");
+    }
+    Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
+
+    bus.CoolantTemp=Mwaterlv;
+
+    #endif
+    
+
+    #ifdef debug
+    Serial.println("***************Data*****************");
+    for (int i=0; i<cSize; ++i){
+      if(i==16) Serial.print("   ");
+      Serial.print(bus.Nsensor[i]);
+    }
+    Serial.println("\n************************************");
+    #endif
+
+
+
+    bool compare=compareArrays(refPD,bus.Nsensor,cSize);
+    if(!compare){
+      copyArrays(refPD,bus.Nsensor,cSize);
+      send=true;
+    }
+
+    #ifdef NiveauEau
+    int deltaLv;
+    deltaLv=Mwaterlv-refWaterLV;
+    if(abs(deltaLv)>150){
+      refWaterLV=Mwaterlv;
+      send=true;
+    }
+
+    #endif
+
+    if(send){
+      send=false;
+      #ifdef debug
+      Serial.println("\nSending Data\n");
+      #endif
+      for(int i=0;i<3;i++){
+        sendData();
+        delay(2500);
+        if(SendOK){
+          blinkLed(500,25);
+          delay(2000);
+          break;
+        }
+      }
+    }
+    #ifdef debug
+    Serial.println("*******************************");
+    #endif
+    delay(2500);
+    
+    #endif
+
+
+
+
+
+
+
+
+  #else
+
+
+    #if defined BOM || BenneSat
+    uint8_t compteur=0;
+
+    for(int i=0;i<4;i++){
+      voltage=io_1.digitalRead(AP);
+      if(!voltage){
+        compteur++;
+      }
+    }
+    if(compteur>2){
+      trame[9]='1'; // Position Trame Platform
+      #ifdef debug
+      Serial.println("Cardan ON");
+      #endif
+    }else{
+      #ifdef debug
+      Serial.println("Cardan OFF");
+      #endif
+      trame[9]='0'; // Position Trame Platform
+    }
+
+    compteur=0;
+    for(int i=0;i<4;i++){
+      voltage=io_1.digitalRead(LC);
+      if(!voltage){
+        compteur++;
+      }
+    }
+    if(compteur>2){
+      trame[7]='1'; // Position Trame Platform
+      #ifdef debug
+      Serial.println("Levée du caisson ON");
+      #endif
+    }else{
+      #ifdef debug
+      Serial.println("Levée du caisson OFF");
+      #endif
+      trame[7]='0'; // Position Trame Platform
+    }
+
+    compteur=0;
+    for(int i=0;i<4;i++){
+      voltage=io_1.digitalRead(OPA);
+      if(!voltage){
+        compteur++;
+      }
+    }
+    if(compteur>2){
+      trame[15]='1'; // Position Trame Platform
+      #ifdef debug
+      Serial.println("Ouverture de la porte arrière ON");
+      #endif
+    }else{
+      #ifdef debug
+      Serial.println("Ouverture de la porte arrière OFF");
+      #endif
+      trame[15]='0'; // Position Trame Platform
+    }
+
+    compteur=0;
+    for(int i=0;i<4;i++){
+      voltage=io_1.digitalRead(CLC);
+      if(!voltage){
+        compteur++;
+      }
+    }
+    if(compteur>2){
+      trame[16]='1'; // Position Trame Platform
+      #ifdef debug
+      Serial.println("Cycle LC ON"); 
+      #endif
+    }else{
+      trame[16]='0'; // Position Trame Platform
+      #ifdef debug
+      Serial.println("Cycle LC OFF");
+      #endif
+    }
+
+
+    compteur=0;
+    for(int i=0;i<4;i++){
+      voltage=io_1.digitalRead(COM);
+      if(!voltage){
+        compteur++;
+      }
+    }
+    if(compteur>2){
+      trame[17]='1'; // Position Trame Platform
+      #ifdef debug
+      Serial.println("Compactation ON");
+      #endif
+
+    }else{
+      trame[17]='0'; // Position Trame Platform
+      #ifdef debug
+      Serial.println("Compactation OFF\n");
+      #endif
+    }
+
+    bool compare=compareArrays(refPD,trame,cSize);
+    if(!compare){
+      copyArrays(refPD,trame,cSize);
+      copyArrays(bus.Nsensor,trame,cSize);
+      #ifdef Repeater
+        esp_now_unregister_recv_cb();
+      #endif
+      send=true;
+    }
+
+    if(send){
+      send=false;
+      #ifdef debug
+      Serial.println("\nSending Data\n");
+      #endif
+      for(int i=0;i<3;i++){
+        sendData();
+        delay(1500);
+        if(SendOK){
+          blinkLed(500,25);
+          // delay(1500);
+          break;
+        }
+      }
+      #ifdef Repeater
+        esp_now_register_recv_cb(OnDataRecv);
+      #endif
+    }
+    // Send data of can
+    #ifdef Repeater
+      if(SendCandata){
+        esp_now_unregister_recv_cb();
+        delay(100);
+        bus.V1='1';
+        for(int i=0;i<3;i++){
+          sendData();
+          delay(1500);
+          if(SendOK){
+            blinkLed(500,25);
+            break;
+          }
+        }
+        bus.V1='0';
+        SendCandata=false;
+        esp_now_register_recv_cb(OnDataRecv);
+      }
+    #endif
+    #ifdef debug
+    Serial.println("*******************************");
+    #endif
+    delay(1000);
+    #endif
+
+
   #endif
-  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
-
-  bus.CoolantTemp=Mwaterlv;
-
-  #endif
-
-  
-
-  
-
-
-  #ifdef debug
-  for (int i=0; i<cSize; ++i){
-    if(i==16) Serial.print("   ");
-    Serial.print(bus.Nsensor[i]);
-  }
-  Serial.println("\n************************************");
-  #endif
-
-  delay(2500);
-#endif
 
 
 
-#ifdef test2
+
+
+#ifdef ESPnowTest
 
   if(true){
     send=false;
@@ -996,16 +1154,15 @@ void loop() {
     #endif
     for(int i=0;i<3;i++){
       sendData();
-      delay(2500);
+      delay(1500);
       if(SendOK){
         blinkLed(500,25);
-        delay(2000);
+        delay(500);
         break;
       }
     }
   }
-  delay(5000);
-
+  delay(2500);
   Serial.println("****************************");
 #endif
 
