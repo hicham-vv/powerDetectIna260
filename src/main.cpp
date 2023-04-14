@@ -11,7 +11,7 @@
 #include <esp_wifi.h>
 
 
-
+ 
 
 #define Repeater // define had la ligne fin tanabghiw nwasslo data dial la carte TracCAN b had la carte powerdetectV5
 
@@ -20,13 +20,13 @@
 // #define BenneSat
 
 
-uint8_t selfMACAddress[] = {0x00, 0xBB, 0x00, 0x00, 0x53, 0x13}; // hadi bach ndefiniw l MAC adress dial la carte li an
+uint8_t selfMACAddress[] = {0x00, 0xBB, 0x00, 0x00, 0x51, 0x01}; // hadi bach ndefiniw l MAC adress dial la carte li an
 
 
-uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x53, 0x13}; // Master MAC Adress 4c:11:ae:9d:6e:54
+uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x51, 0x01}; // Master MAC Adress 4c:11:ae:9d:6e:54
 
 #ifdef Repeater
-uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x53, 0x13}; // Adress CAN ila ila definiti Repeater 30:C6:F7:30:96:98
+uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x51, 0x01}; // Adress CAN ila ila definiti Repeater 30:C6:F7:30:96:98
 #endif
 
 
@@ -79,11 +79,13 @@ typedef struct message {
   int RPM =-1;
   int BrakePP=-1;
   int AccPP=-1;
-  // char a[10];
-
   char Nsensor[cSize+1]= {'0','0','0','0','0','0','0','0',
                           '0','0','0','0','0','0','0','0',
                           '0','0','0','0','0','0','0','0'};
+
+int CAN9=-1;
+int CAN10=-1;
+
 }message;
 message bus; // créer une structure message nommé bus
 
@@ -120,7 +122,6 @@ void copyArrays(char a[], char b[], int n);
 void blinkLed(uint16_t time_Out,uint16_t ms);
 #ifdef Repeater
   void OnDataRecv(const uint8_t * senderMac, const uint8_t *incomingData, int len) {
-    
     memcpy(&bus, incomingData, len);
     #ifdef debug
     Serial.printf("Transmitter MacAddr: %02x:%02x:%02x:%02x:%02x:%02x \n", senderMac[0], senderMac[1], senderMac[2], senderMac[3], senderMac[4], senderMac[5]);
