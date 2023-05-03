@@ -20,13 +20,13 @@
 // #define BenneSat
 
 
-uint8_t selfMACAddress[] = {0x00, 0xBB, 0x00, 0x00, 0x51, 0x01}; // hadi bach ndefiniw l MAC adress dial la carte li an
+uint8_t selfMACAddress[] = {0x00, 0xBB, 0x00, 0x00, 0x51, 0x03}; // hadi bach ndefiniw l MAC adress dial la carte li an
 
 
-uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x51, 0x01}; // Master MAC Adress 4c:11:ae:9d:6e:54
+uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x51, 0x03}; // Master MAC Adress 4c:11:ae:9d:6e:54
 
 #ifdef Repeater
-uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x51, 0x01}; // Adress CAN ila ila definiti Repeater 30:C6:F7:30:96:98
+uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x51, 0x03}; // Adress CAN ila ila definiti Repeater 30:C6:F7:30:96:98
 #endif
 
 
@@ -61,6 +61,7 @@ const byte SX1509_ADDRESS_1 = 0x3E;  // SX1509_1 I2C address
 
 #define Led_esp 2
 #define Reg_Enable 15
+#define RLY1_Enable 26
 boolean ledState = false;
 
 unsigned long previousMillis;
@@ -167,6 +168,8 @@ void OnDataSent(const uint8_t *mac, esp_now_send_status_t status) {
 }
 
 void setup() {
+  pinMode(RLY1_Enable,OUTPUT);
+  digitalWrite(RLY1_Enable,LOW);
   delay(500);
   esp_task_wdt_init(25, true); //enable panic so ESP32 restarts
   esp_task_wdt_add(NULL); //add current thread to WDT watch
@@ -181,6 +184,7 @@ void setup() {
   Serial.begin(115200);
   while(!Serial);
   #endif
+
   delay(500);
   pinMode(Led_esp,OUTPUT);
 
