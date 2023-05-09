@@ -22,7 +22,6 @@
 
 
 #define Repeater // define had la ligne fin tanabghiw nwasslo data dial la carte TracCAN b had la carte powerdetectV5
-
 #define debug
 #define BOM
 // #define BenneSat
@@ -86,18 +85,30 @@ WiFiClient Wificlient;
 // #define OTA_WIFI_SSID "hamid"
 // #define OTA_WIFI_PASSWORD "ifran123"
 
-#define FIRMWARE_VER 23050301
+#define FIRMWARE_VER 23050302
 #define OTA_URL "info.geodaki.com"
 #define OTA_SERVER_PORT 100
 int ota_port = OTA_SERVER_PORT;
-const char ota_resource[] = "/ARER5103/TRACPWR/firmware.bin"; // Endpoint where the firmware.bin file is stored in the OTA server
+
+
+
+
+uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x52, 0x01};
+
+uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x52, 0x01}; // Master MAC Adress 30:c6:f7:20:d3:50
+
+#ifdef Repeater
+uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x52, 0x01}; // Adress CAN ila ila definiti Repeater 24:0a:c4:08:4f:64
+#endif
+
+const char ota_resource[] = "/ARER5201/TRACPWR/firmware.bin"; // Endpoint where the firmware.bin file is stored in the OTA server
 uint32_t firmware_version = FIRMWARE_VER;
 uint32_t knownCRC32 = 0x6f50d767;
 uint32_t knownFileSize = 1024; // In case server does not send it
 
 #define DEBUG_FLAG 1
 
-
+#define R1_PIN 26
 
 /* OTA Functions*/
 
@@ -107,14 +118,6 @@ const char* password = "insight";
 bool CheckWiFiOta();
 void printPercent(uint32_t readLength, uint32_t contentLength);
 
-
-uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x51, 0x03};
-
-uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x51, 0x03}; // Master MAC Adress 30:c6:f7:20:d3:50
-
-#ifdef Repeater
-uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x51, 0x03}; // Adress CAN ila ila definiti Repeater 24:0a:c4:08:4f:64
-#endif
 
 
   /******** BLock SX01 ********/
@@ -241,6 +244,7 @@ void blinkLed(uint16_t time_Out,uint16_t ms);
       Serial.print("RPM=");Serial.print(bus.RPM);Serial.println(" rpm");
       Serial.print("BrakePP=");Serial.print(bus.BrakePP);Serial.println(" %");
       Serial.print("AccPP=");Serial.print(bus.AccPP);Serial.println(" %");
+      Serial.print("Weight=");Serial.print(bus.CAN10);Serial.println(" Kg");
       Serial.println("********************************\n");
       #endif
       SendCandata=true;
@@ -270,6 +274,9 @@ void setup() {
   // esp_task_wdt_add(NULL); //add current thread to WDT watch
   pinMode(Attiny_Int,OUTPUT); // Attiny feed  Mode output
 
+  pinMode(R1_PIN, OUTPUT);
+  digitalWrite(R1_PIN, LOW);
+
   My_timer = timerBegin(0, 80, true);
   timerAttachInterrupt(My_timer, &feedAttiny, true);
   timerAlarmWrite(My_timer, 15000000, true); // ISR every 15s
@@ -281,6 +288,20 @@ void setup() {
   #endif
   delay(500);
   pinMode(Led_esp,OUTPUT);
+
+
+  while(1){
+    Serial.println("turning off CARDAN");
+    digitalWrite(R1_PIN, HIGH);
+    delay(10000);
+    Serial.println("turning on");
+    digitalWrite(R1_PIN, LOW);
+
+    delay(10000);
+
+
+
+  }
 
 
   pinMode(Reg_Enable,OUTPUT);
@@ -1179,7 +1200,7 @@ bool CheckWiFiOta(){
     Serial.println("Length is : ");
     Serial.print(length);
     Serial.print(" bytes");
-    if(FIRMWARE_VER != firmware_version){
+    if(FIRMWARE_VER == firmware_version){
     Serial.println("hang 1");
     if(!InternalStorage.open(length)){
       http.stop();
