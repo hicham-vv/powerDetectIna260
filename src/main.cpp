@@ -290,18 +290,18 @@ void setup() {
   pinMode(Led_esp,OUTPUT);
 
 
-  while(1){
-    Serial.println("turning off CARDAN");
-    digitalWrite(R1_PIN, HIGH);
-    delay(10000);
-    Serial.println("turning on");
-    digitalWrite(R1_PIN, LOW);
+  // while(1){
+  //   Serial.println("turning off CARDAN");
+  //   digitalWrite(R1_PIN, HIGH);
+  //   delay(10000);
+  //   Serial.println("turning on");
+  //   digitalWrite(R1_PIN, LOW);
 
-    delay(10000);
+  //   delay(10000);
 
 
 
-  }
+  // }
 
 
   pinMode(Reg_Enable,OUTPUT);
