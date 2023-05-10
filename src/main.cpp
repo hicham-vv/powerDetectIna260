@@ -531,6 +531,7 @@ void MainTask(void *pvParameters){
   
 
   while(1){
+  compteur= 0;
   for(int i=0;i<4;i++){
     voltage=io_1.digitalRead(AP);
     if(!voltage){
