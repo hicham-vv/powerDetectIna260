@@ -23,7 +23,7 @@
 // #define NiveauEau // commenti had la ligne ila kanti ghadi detecter niveau dial lma b la carte powerdetectV3
 
 // #define ESPnowTest // Pour tester le fonctionnement dial ESP_NOW, crash/ porté ...
-
+esp_now_peer_info  receiverinfo;
 
 uint8_t selfMACAddress[] = {0x00, 0xBB, 0x00, 0x00, 0x00, 0x01};
 
@@ -666,7 +666,6 @@ void setup() {
     // get the status of Trasnmitted packet
     esp_now_register_send_cb(OnDataSent);
 
-    esp_now_peer_info  receiverinfo;
     memcpy(receiverinfo.peer_addr, receiverMAC, 6);
     receiverinfo.channel=0;
     receiverinfo.encrypt = false;
