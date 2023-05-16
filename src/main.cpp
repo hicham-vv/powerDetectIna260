@@ -23,8 +23,20 @@
 
 #define Repeater // define had la ligne fin tanabghiw nwasslo data dial la carte TracCAN b had la carte powerdetectV5
 #define debug
-#define BOM
-// #define BenneSat
+
+
+#define WaterLv // define cette ligne ila kana ana9raw niveau d'eau dial citerne 
+
+
+
+uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x52, 0x01};
+
+uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x52, 0x01}; // Master MAC Adress 30:c6:f7:20:d3:50
+
+#ifdef Repeater
+uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x52, 0x01}; // Adress CAN ila ila definiti Repeater 24:0a:c4:08:4f:64
+#endif
+const char ota_resource[] = "/ARER5201/TRACPWR/firmware.bin"; // Endpoint where the firmware.bin file is stored in the OTA server
 
 
 /******************* Bosch GLM configuration ******************/
@@ -76,7 +88,9 @@ int distanceGLM = 0;
 float compute_weight(float distance);
 #endif
 
-// #define SELF_MAC {0x00, 0xBB, 0x00, 0x00, 0x51, 0x03}
+#define INA260_I2CADDR_1 0x44 // INA260 I2c Adress 0x44 A1=1/A0=0
+
+Adafruit_INA260 ina260_1 = Adafruit_INA260();
 
 
 /*********************************************************/
@@ -85,7 +99,7 @@ WiFiClient Wificlient;
 // #define OTA_WIFI_SSID "hamid"
 // #define OTA_WIFI_PASSWORD "ifran123"
 
-#define FIRMWARE_VER 23050302
+#define FIRMWARE_VER 230501601
 #define OTA_URL "info.geodaki.com"
 #define OTA_SERVER_PORT 100
 int ota_port = OTA_SERVER_PORT;
@@ -93,15 +107,6 @@ int ota_port = OTA_SERVER_PORT;
 
 
 
-uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x52, 0x01};
-
-uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x52, 0x01}; // Master MAC Adress 30:c6:f7:20:d3:50
-
-#ifdef Repeater
-uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x52, 0x01}; // Adress CAN ila ila definiti Repeater 24:0a:c4:08:4f:64
-#endif
-
-const char ota_resource[] = "/ARER5201/TRACPWR/firmware.bin"; // Endpoint where the firmware.bin file is stored in the OTA server
 uint32_t firmware_version = FIRMWARE_VER;
 uint32_t knownCRC32 = 0x6f50d767;
 uint32_t knownFileSize = 1024; // In case server does not send it
@@ -289,19 +294,20 @@ void setup() {
   delay(500);
   pinMode(Led_esp,OUTPUT);
 
+  #ifdef WaterLv
 
-  // while(1){
-  //   Serial.println("turning off CARDAN");
-  //   digitalWrite(R1_PIN, HIGH);
-  //   delay(10000);
-  //   Serial.println("turning on");
-  //   digitalWrite(R1_PIN, LOW);
-
-  //   delay(10000);
-
-
-
-  // }
+  if (!ina260_1.begin(INA260_I2CADDR_1)){
+    #ifdef debug
+    Serial.println("Couldn't find INA260 chip 1");
+    #endif
+    esp_restart();
+  }
+  else{
+    #ifdef debug
+    Serial.println("Found INA260 chip 1");
+    #endif
+  }
+  #endif
 
 
   pinMode(Reg_Enable,OUTPUT);
@@ -528,9 +534,47 @@ float getDistance(){
 void MainTask(void *pvParameters){
   Serial.println("Starting Main Task...");
   uint8_t compteur=0;
+
+  int waterlv=0;
+  int Mwaterlv=0;
+
+  int comp=0;
   
 
   while(1){
+
+  #ifdef WaterLv
+
+
+  comp=0;
+  for(int i=0;i<80;i++){
+    waterlv=ina260_1.readBusVoltage();
+    // Serial.println(waterlv);
+    if(waterlv>490 && waterlv<3000){
+      Mwaterlv=Mwaterlv+waterlv;
+      comp++;
+    }
+    delay(10);
+  }
+  if(comp!=0){
+    Mwaterlv=Mwaterlv/comp;
+  }else{
+    Mwaterlv=0;
+  }
+  if(Mwaterlv>=500){
+  Mwaterlv=Mwaterlv-500;
+    Mwaterlv=Mwaterlv/0.8;
+  }else{
+    Mwaterlv=0;
+    Serial.print("Water Lv is LOW");
+  }
+
+  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
+
+  #endif
+
+
+
   compteur= 0;
   for(int i=0;i<4;i++){
     voltage=io_1.digitalRead(AP);
@@ -628,7 +672,15 @@ void MainTask(void *pvParameters){
     #endif
   }
 
-  
+
+  int deltaLv;
+  deltaLv=Mwaterlv-refWaterLV;
+  if(abs(deltaLv)>50){
+    bus.CAN9=Mwaterlv;
+    refWaterLV=Mwaterlv;
+    send=true;
+  }
+
 
   bool compare=compareArrays(refPD,trame,cSize);
   if(!compare){
