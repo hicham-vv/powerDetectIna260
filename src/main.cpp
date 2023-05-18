@@ -987,9 +987,7 @@ void loop() {
 
     #if defined BOM || BenneSat
     uint8_t compteur=0;
-
     for(int i=0;i<4;i++){
-      compteur = 0;
       voltage=io_1.digitalRead(AP);
       if(!voltage){
         compteur++;
