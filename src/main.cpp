@@ -574,6 +574,68 @@ void MainTask(void *pvParameters){
   #endif
 
 
+  compteur = 0;
+  for(int i = 0; i < 4; i ++){
+    voltage = io_1.digitalRead(BD);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur > 2){
+    trame[0]='1';
+    #ifdef debug
+    Serial.println("Brosse droite ON");
+    #endif
+  }
+  else{
+    #ifdef debug
+    Serial.println("Brosse droite OFF");
+    #endif
+    trame[0] = '0';
+  }
+
+  compteur = 0;
+  for(int i = 0; i < 4; i ++){
+    voltage = io_1.digitalRead(BG);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur > 2){
+    trame[2]='1';
+    #ifdef debug
+    Serial.println("Brosse gauche ON");
+    #endif
+  }
+  else{
+    #ifdef debug
+    Serial.println("Brosse gauche OFF");
+    #endif
+    trame[2] = '0';
+  }
+
+  compteur = 0;
+   for(int i = 0; i < 4; i ++){
+    voltage = io_1.digitalRead(BG);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur > 2){
+    trame[4]='1';
+    #ifdef debug
+    Serial.println("Brosse centrale ON");
+    #endif
+  }
+  else{
+    #ifdef debug
+    Serial.println("Brosse centrale OFF");
+    #endif
+    trame[4] = '0';
+  }
+
+
+
 
   compteur= 0;
   for(int i=0;i<4;i++){
