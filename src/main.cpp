@@ -143,6 +143,8 @@ void printPercent(uint32_t readLength, uint32_t contentLength);
   #define  CLC 13  // Cycle LC
   #define  COM 14  // Compactation
   #define  PT  15  // Pousée Tablier
+  #define  BA  15  // Brosse devant  // On switch entre le pin de pousée Tablier et la brosse devant  / mais ils ont pas les mêmes positions dans la trame 
+
 
 
 #ifdef Repeater
@@ -634,6 +636,25 @@ void MainTask(void *pvParameters){
     trame[4] = '0';
   }
 
+
+  compteur= 0;
+  for(int i=0;i<4;i++){
+    voltage=io_1.digitalRead(BA);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur>2){
+    trame[11]='1'; // Position Trame Platform
+    #ifdef debug
+    Serial.println("Brosse devant ON");
+    #endif
+  }else{
+    #ifdef debug
+    Serial.println("Brosse devant OFF");
+    #endif
+    trame[11]='0'; // Position Trame Platform
+  }
 
 
 
