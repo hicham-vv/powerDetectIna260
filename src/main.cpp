@@ -618,7 +618,7 @@ void MainTask(void *pvParameters){
 
   compteur = 0;
    for(int i = 0; i < 4; i ++){
-    voltage = io_1.digitalRead(BG);
+    voltage = io_1.digitalRead(BC);
     if(!voltage){
       compteur++;
     }
