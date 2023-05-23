@@ -29,14 +29,14 @@
 
 
 
-uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x52, 0x01};
+uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x33, 0x03};
 
-uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x52, 0x01}; // Master MAC Adress 30:c6:f7:20:d3:50
+uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x33, 0x03}; // Master MAC Adress 30:c6:f7:20:d3:50
 
 #ifdef Repeater
-uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x52, 0x01}; // Adress CAN ila ila definiti Repeater 24:0a:c4:08:4f:64
+uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x33, 0x03}; // Adress CAN ila ila definiti Repeater 24:0a:c4:08:4f:64
 #endif
-const char ota_resource[] = "/ARER5201/TRACPWR/firmware.bin"; // Endpoint where the firmware.bin file is stored in the OTA server
+const char ota_resource[] = "/ARER3303/TRACPWR/firmware.bin"; // Endpoint where the firmware.bin file is stored in the OTA server
 
 
 /******************* Bosch GLM configuration ******************/
@@ -99,7 +99,7 @@ WiFiClient Wificlient;
 // #define OTA_WIFI_SSID "hamid"
 // #define OTA_WIFI_PASSWORD "ifran123"
 
-#define FIRMWARE_VER 230501601
+#define FIRMWARE_VER 230523601
 #define OTA_URL "info.geodaki.com"
 #define OTA_SERVER_PORT 100
 int ota_port = OTA_SERVER_PORT;
@@ -136,7 +136,7 @@ void printPercent(uint32_t readLength, uint32_t contentLength);
   #define  LC  6   // Levée du caisson
   #define  AMA 7   // Aspirateur Manuel arrière
   #define  AP  8   // Activation de la pompe
-  #define  ARD 9   // Aroseur devant
+  #define  BA 9    //  Brosse devant  // On switch entre le pin de Aroseur devant  et la brosse devant  / mais ils ont pas les mêmes positions dans la trame 
   #define  LAB 10  // Lavage Bac
   #define  VES 11  // Vidade Eau sale
   #define  OPA 12  // Ouverture porte arriere
@@ -144,7 +144,6 @@ void printPercent(uint32_t readLength, uint32_t contentLength);
   #define  COM 14  // Compactation
   #define  PT  15  // Pousée Tablier
   
-  #define  BA  9  // Brosse devant  // On switch entre le pin de Aroseur devant  et la brosse devant  / mais ils ont pas les mêmes positions dans la trame 
 
 
 
@@ -400,7 +399,7 @@ WiFi.mode(WIFI_OFF);
   io_1.pinMode(LC, INPUT);  // 6
   io_1.pinMode(AMA, INPUT); // 7
   io_1.pinMode(AP, INPUT);  // 8
-  io_1.pinMode(ARD, INPUT); // 9
+  io_1.pinMode(BA, INPUT); // 9
   io_1.pinMode(LAB, INPUT); // 10
   io_1.pinMode(VES, INPUT); // 11
   io_1.pinMode(OPA, INPUT); // 12
@@ -678,24 +677,24 @@ void MainTask(void *pvParameters){
     trame[9]='0'; // Position Trame Platform
   }
 
-  compteur=0;
-  for(int i=0;i<4;i++){
-    voltage=io_1.digitalRead(LC);
-    if(!voltage){
-      compteur++;
-    }
-  }
-  if(compteur>2){
-    trame[7]='1'; // Position Trame Platform
-    #ifdef debug
-    Serial.println("Levée du caisson ON");
-    #endif
-  }else{
-    #ifdef debug
-    Serial.println("Levée du caisson OFF");
-    #endif
-    trame[7]='0'; // Position Trame Platform
-  }
+  // compteur=0;
+  // for(int i=0;i<4;i++){
+  //   voltage=io_1.digitalRead(LC);
+  //   if(!voltage){
+  //     compteur++;
+  //   }
+  // }
+  // if(compteur>2){
+  //   trame[7]='1'; // Position Trame Platform
+  //   #ifdef debug
+  //   Serial.println("Levée du caisson ON");
+  //   #endif
+  // }else{
+  //   #ifdef debug
+  //   Serial.println("Levée du caisson OFF");
+  //   #endif
+  //   trame[7]='0'; // Position Trame Platform
+  // }
 
   compteur=0;
   for(int i=0;i<4;i++){
