@@ -143,7 +143,8 @@ void printPercent(uint32_t readLength, uint32_t contentLength);
   #define  CLC 13  // Cycle LC
   #define  COM 14  // Compactation
   #define  PT  15  // Pousée Tablier
-  #define  BA  15  // Brosse devant  // On switch entre le pin de pousée Tablier et la brosse devant  / mais ils ont pas les mêmes positions dans la trame 
+  
+  #define  BA  9  // Brosse devant  // On switch entre le pin de Aroseur devant  et la brosse devant  / mais ils ont pas les mêmes positions dans la trame 
 
 
 
