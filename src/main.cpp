@@ -99,7 +99,7 @@ WiFiClient Wificlient;
 // #define OTA_WIFI_SSID "hamid"
 // #define OTA_WIFI_PASSWORD "ifran123"
 
-#define FIRMWARE_VER 230523601
+#define FIRMWARE_VER 23052301
 #define OTA_URL "info.geodaki.com"
 #define OTA_SERVER_PORT 100
 int ota_port = OTA_SERVER_PORT;
