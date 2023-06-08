@@ -26,6 +26,9 @@
 
 
 #define WaterLv // define cette ligne ila kana ana9raw niveau d'eau dial citerne 
+#define TEST    // test water level = -1 fix
+
+int StorageWater = 0;
 
 
 
@@ -259,6 +262,11 @@ void blinkLed(uint16_t time_Out,uint16_t ms);
   }
 #endif
 void sendData() {
+  #ifdef TEST
+  if(bus.CAN9 == -1){
+    bus.CAN9 = StorageWater;
+  }
+  #endif
   esp_now_send(receiverMAC,(uint8_t *) &bus, sizeof(bus)); // NULL means send to all peers
 }
 void OnDataSent(const uint8_t *mac, esp_now_send_status_t status) {
@@ -572,6 +580,12 @@ void MainTask(void *pvParameters){
   }
 
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
+
+  #ifdef TEST
+  if(Mwaterlv != 0){
+    StorageWater = Mwaterlv;
+  }
+  #endif
 
   #endif
 
