@@ -25,8 +25,8 @@
 #define debug
 
 
-#define WaterLv // define cette ligne ila kana ana9raw niveau d'eau dial citerne 
-#define TEST    // test water level = -1 fix
+// #define WaterLv // define cette ligne ila kana ana9raw niveau d'eau dial citerne 
+// #define TEST    // test water level = -1 fix
 
 int StorageWater = 0;
 
@@ -691,24 +691,24 @@ void MainTask(void *pvParameters){
     trame[9]='0'; // Position Trame Platform
   }
 
-  // compteur=0;
-  // for(int i=0;i<4;i++){
-  //   voltage=io_1.digitalRead(LC);
-  //   if(!voltage){
-  //     compteur++;
-  //   }
-  // }
-  // if(compteur>2){
-  //   trame[7]='1'; // Position Trame Platform
-  //   #ifdef debug
-  //   Serial.println("Levée du caisson ON");
-  //   #endif
-  // }else{
-  //   #ifdef debug
-  //   Serial.println("Levée du caisson OFF");
-  //   #endif
-  //   trame[7]='0'; // Position Trame Platform
-  // }
+  compteur=0;
+  for(int i=0;i<4;i++){
+    voltage=io_1.digitalRead(LC);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur>2){
+    trame[6]='1'; // Position Trame Platform
+    #ifdef debug
+    Serial.println("Levée du caisson ON");
+    #endif
+  }else{
+    #ifdef debug
+    Serial.println("Levée du caisson OFF");
+    #endif
+    trame[6]='0'; // Position Trame Platform
+  }
 
   compteur=0;
   for(int i=0;i<4;i++){
