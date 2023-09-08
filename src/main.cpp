@@ -8,10 +8,9 @@
   #include <WiFi.h>
 #endif
 
+#include <esp_wifi.h>
 
-#define INA260_I2CADDR_3 0x41 // INA260 I2C Adress 0x41 A1=0/A0=1
-#define INA260_I2CADDR_2 0x40 // INA260 default i2c address 0x40 A1=0/A0=0
-#define INA260_I2CADDR_1 0x44 // INA260 I2c Adress 0x44 A1=1/A0=0
+
 
 
 
@@ -21,14 +20,8 @@
 #define debug
 
 #define DynamiqueKarsher // Define had la ligne fin ikon l karsher Dynamique, sinon  desactiviha 
-
 #define BusVoltage
-
-
-
-
 #define Sensor3V
-
 
 
 // #define test
@@ -36,9 +29,9 @@
 
 // #define Laveusecolonne
 // #define BalayeuseMeca // pour detecter le niveau d'eau et le karsher
-#define CiterneTanger
+// #define CiterneTanger
 // #define LaveuseBacTanger
-// #define BOM
+#define BOM
 // #define COPAG
 
 
@@ -46,14 +39,21 @@
 
 
 
-uint8_t receiverMAC[] = {0x4c,0x11,0xae,0x9d,0x6e,0xc0}; // TracCar MAC Adress  4c:11:ae:9d:6e:c0
+uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x33, 0x03};
+uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x33, 0x03}; // Master MAC Adress 30:c6:f7:20:d3:50
 
 
 
+
+
+esp_now_peer_info_t peerInfo;
 
 bool SendOK=false;
 
 
+#define INA260_I2CADDR_3 0x41 // INA260 I2C Adress 0x41 A1=0/A0=1
+#define INA260_I2CADDR_2 0x40 // INA260 default i2c address 0x40 A1=0/A0=0
+#define INA260_I2CADDR_1 0x44 // INA260 I2c Adress 0x44 A1=1/A0=0
 
 Adafruit_INA260 ina260_1 = Adafruit_INA260();
 Adafruit_INA260 ina260_2 = Adafruit_INA260();
@@ -84,7 +84,7 @@ typedef struct message {
   int FuelTank =-1;
   int TotalHours =-1;
   int TotalFuelused =-1;
-  int CoolantTemp =-1; // 
+  int CoolantTemp =-1;
   int RPM =-1;
   int BrakePP=-1;
   int AccPP=-1;
@@ -93,6 +93,8 @@ typedef struct message {
   char Nsensor[cSize+1]= {'0','0','0','0','0','0','0','0',
                           '0','0','0','0','0','0','0','0',
                           '0','0','0','0','0','0','0','0'};
+  int CAN9=-1;
+  int CAN10=-1;
 }message;
 message bus; // créer une structure message nommé bus
 
@@ -107,25 +109,25 @@ char refPD3='0';
 int refWaterLV=0;
 bool send=false;
 
-  uint16_t count=0;
-  int MkarsherPrec=0;
+uint16_t count=0;
+int MkarsherPrec=0;
+
+
+char refPD[cSize+1]= {'0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0'};
+char trame[cSize+1]= {'0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0'};
 
 
 
 
 
 
-
-
-
-void blinkLed(uint16_t time_Out,uint16_t ms){
-  previousMillis=millis();
-  while((millis()-previousMillis)<time_Out){
-    ledState = !ledState;
-    digitalWrite(Led_esp,ledState);
-    delay(ms);
-  }
-}
+bool compareArrays(char a[], char b[], int n);
+void copyArrays(char a[], char b[], int n);
+void blinkLed(uint16_t time_Out,uint16_t ms);
 
 
 void sendData() {
@@ -203,20 +205,17 @@ void setup() {
 
     // Once ESPNow is successfully Init, we will register for Send CB to
     // get the status of Trasnmitted packet
-    esp_now_register_send_cb(OnDataSent);
+  esp_now_register_send_cb(OnDataSent);
 
-    esp_now_peer_info  receiverinfo;
-    memcpy(receiverinfo.peer_addr, receiverMAC, 6);
-    receiverinfo.channel=0;
-    receiverinfo.encrypt = false;
-
-    // add the receiver module 
-    if( esp_now_add_peer(&receiverinfo) != ESP_OK){
-      #ifdef debug
-      Serial.println("Failed to add the receiver module");
-      #endif
-      esp_restart();
-    }
+  memcpy(peerInfo.peer_addr, receiverMAC, 6);
+  peerInfo.channel = 0;  
+  peerInfo.encrypt = false;
+  
+  // Add peer        
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add peer");
+    esp_restart();
+  }
   }
 
 void loop() {
@@ -639,15 +638,15 @@ void loop() {
   #ifdef BOM
 
   uint8_t compteur=0;
-  for(int i=0;i<10;i++){
+  for(int i=0;i<6;i++){
     voltage=ina260_1.readBusVoltage();
     voltage=voltage/1000;
     if(voltage>TensionSeuil){
       compteur++;
     }
   }
-  if(compteur>6){
-    bus.PD1='1';
+  if(compteur>2){
+    trame[15]='1';
     #ifdef debug
     Serial.println("Levée de la porte arrière ON");
     #endif
@@ -655,59 +654,54 @@ void loop() {
     #ifdef debug
     Serial.println("Levée de la porte arrière OFF");
     #endif
-    bus.PD1='0';
+    trame[15]='0';
   }
 
   compteur=0;
-  for(int i=0;i<10;i++){
+  for(int i=0;i<6;i++){
     voltage=ina260_2.readBusVoltage();
     voltage=voltage/1000;
     if(voltage>TensionSeuil){
       compteur++;
     }
   }
-  if(compteur>5){
-    bus.PD2='1';
+  if(compteur>2){
+    trame[16]='1';
     #ifdef debug
     Serial.println("Levée du Bac ON");
     #endif
   }else{
-    bus.PD2='0';
+    trame[16]='0';
     #ifdef debug
     Serial.println("Levée du Bac OFF");
     #endif
   }
 
   compteur=0;
-  for(int i=0;i<10;i++){
+  for(int i=0;i<6;i++){
     voltage=ina260_3.readBusVoltage();
     voltage=voltage/1000;
     if(voltage>TensionSeuil){
       compteur++;
     }
   }
-  if(compteur>5){
-    bus.PD3='1';
+  if(compteur>2){
+    trame[17]='1';
     Serial.println("Cycle LC ON");
 
   }else{
-    bus.PD3='0';
+    trame[17]='0';
     Serial.println("Cycle LC OFF");
   }
 
+  bool compare=compareArrays(refPD,trame,cSize);
+  if(!compare){
+    copyArrays(refPD,trame,cSize);
+    copyArrays(bus.Nsensor,trame,cSize);
+    send=true;
+  }
 
-  if(refPD1!=bus.PD1){
-    refPD1=bus.PD1;
-    send=true;
-  }
-  if(refPD2!=bus.PD2){
-    refPD2=bus.PD2;
-    send=true;
-  }
-  if(refPD3!=bus.PD3){
-    refPD3=bus.PD3;
-    send=true;
-  }
+
   if(send){
     send=false;
     for(int i=0;i<5;i++){
@@ -877,7 +871,6 @@ void loop() {
 
   #endif
 
-
   esp_task_wdt_reset();
 }
 
@@ -997,3 +990,27 @@ void loop() {
   delay(1000);
 
   #endif
+
+void blinkLed(uint16_t time_Out,uint16_t ms){
+  previousMillis=millis();
+  while((millis()-previousMillis)<time_Out){
+    ledState = !ledState;
+    digitalWrite(Led_esp,ledState);
+    delay(ms);
+  }
+}
+
+bool compareArrays(char a[], char b[], int n){
+  for (int i=0; i<n; ++i){
+    if (a[i] != b[i]){
+        return false;
+    }
+  }
+  return true;
+}
+
+void copyArrays(char a[], char b[], int n){
+  for (int i=0; i<n; ++i){
+    a[i] = b[i];
+  }
+}
