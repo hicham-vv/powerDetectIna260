@@ -19,7 +19,7 @@
 
 #define debug
 
-#define DynamiqueKarsher // Define had la ligne fin ikon l karsher Dynamique, sinon  desactiviha 
+// #define DynamiqueKarsher // Define had la ligne fin ikon l karsher Dynamique, sinon  desactiviha 
 #define BusVoltage
 #define Sensor3V
 
@@ -39,8 +39,8 @@
 
 
 
-uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x33, 0x03};
-uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x33, 0x03}; // Master MAC Adress 30:c6:f7:20:d3:50
+uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x53, 0x12};
+uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x53, 0x12}; // Master MAC Adress 30:c6:f7:20:d3:50
 
 
 
@@ -195,12 +195,18 @@ void setup() {
   
 
   WiFi.mode(WIFI_STA); // set the wifi mode as Station
+  esp_wifi_set_mac(WIFI_IF_STA, &selfMAC[0]);
   if (esp_now_init() != ESP_OK) {
     #ifdef debug
     Serial.println("ESP_Now init failed...");
     #endif
-    delay(RETRY_INTERVAL);
+    delay(3000);
     esp_restart();
+  }else{
+    #ifdef debug
+    Serial.println("ESP_Now init OK...");
+    #endif
+
   }
 
     // Once ESPNow is successfully Init, we will register for Send CB to
