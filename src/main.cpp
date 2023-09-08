@@ -10,31 +10,31 @@
 
 // #define test
 
+
 #define debug
-#define BusVoltage
+#define Repeater // define had la ligne fin tanabghiw nwasslo data dial la carte TracCAN b had la carte powerdetect
 
 
-#define PorteArriere
-
-
-
-
+#define PorteArriere // Pour lire daa de la porte Arriere
 // #define FuelLV
 
-#define TensionSeuil 10
 
 
 
 
 uint8_t selfMAC[] = {0x00, 0xBB, 0x00, 0x00, 0x98, 0x00}; // Mac adress de la carte Mére lui même 
 uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x98, 0x00}; // Master MAC Adress 
-
+#ifdef Repeater
+uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x33, 0x03}; // Adress CAN ila ila definiti Repeater 24:0a:c4:08:4f:64
+#endif
 
 
 Adafruit_INA260 ina260_1 = Adafruit_INA260();
 
 esp_now_peer_info_t peerInfo;
 
+#define BusVoltage
+#define TensionSeuil 10
 #define Led_esp 2  
 boolean ledState = false;
 
@@ -67,12 +67,12 @@ typedef struct message {
   int RPM =-1;
   int BrakePP=-1;
   int AccPP=-1;
-  // uint8_t *buffer;
+
   char Nsensor[cSize+1]= {'0','0','0','0','0','0','0','0',
                           '0','0','0','0','0','0','0','0',
                           '0','0','0','0','0','0','0','0'};
   int CAN9=-1;
-  int weight=-1;
+  int CAN10=-1;
 }message;
 message bus; // créer une structure message nommé bus
 
@@ -81,22 +81,27 @@ int voltage=0;
 char refPD1='0';
 bool send=false;
 bool SendOK=false;
+int waterlv=0;
+int Mwaterlv=0;
+
+#ifdef Repeater
+bool SendCandata=false;
+#endif
 
 
+char refPD[cSize+1]= {'0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0'};
+char trame[cSize+1]= {'0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0',
+                      '0','0','0','0','0','0','0','0'};
 
-  int waterlv=0;
-  int Mwaterlv=0;
+
+bool compareArrays(char a[], char b[], int n);
+void copyArrays(char a[], char b[], int n);
+void blinkLed(uint16_t time_Out,uint16_t ms);
 
 
-
-void blinkLed(uint16_t time_Out,uint16_t ms){
-  previousMillis=millis();
-  while((millis()-previousMillis)<time_Out){
-    ledState = !ledState;
-    digitalWrite(Led_esp,ledState);
-    delay(ms);
-  }
-}
 void sendData() {
   esp_now_send(receiverMAC,(uint8_t *) &bus, sizeof(bus)); // NULL means send to all peers
 }
@@ -113,6 +118,37 @@ void OnDataSent(const uint8_t *mac, esp_now_send_status_t status) {
     SendOK=false;
     }
 }
+
+#ifdef Repeater
+  void OnDataRecv(const uint8_t * senderMac, const uint8_t *incomingData, int len) {
+    memcpy(&bus, incomingData, len);
+    #ifdef debug
+    Serial.printf("Transmitter MacAddr: %02x:%02x:%02x:%02x:%02x:%02x \n", senderMac[0], senderMac[1], senderMac[2], senderMac[3], senderMac[4], senderMac[5]);
+    #endif
+    uint8_t iCan=0;
+    for(int i=0;i<6;i++){
+      if(senderMac[i]==CanSenderMac[i]){
+        iCan++;
+      }
+    }
+    if(iCan==6){
+      #ifdef debug
+      Serial.println("\n*****************CAN DATA***************\n");
+      Serial.print("Fuel Lv=");Serial.print(bus.FuelTank);Serial.println(" %");
+      Serial.print("Total Distance=");Serial.print(bus.TotalDistance);Serial.println(" Km");
+      Serial.print("Total Hours=");Serial.print(bus.TotalHours);Serial.println(" H");
+      Serial.print("Total Fuel used=");Serial.print(bus.TotalFuelused);Serial.println(" L");
+      Serial.print("Coolant Temperature=");Serial.print(bus.CoolantTemp);Serial.println(" C");
+      Serial.print("RPM=");Serial.print(bus.RPM);Serial.println(" rpm");
+      Serial.print("BrakePP=");Serial.print(bus.BrakePP);Serial.println(" %");
+      Serial.print("AccPP=");Serial.print(bus.AccPP);Serial.println(" %");
+      Serial.print("Weight=");Serial.print(bus.CAN10);Serial.println(" Kg");
+      Serial.println("********************************\n");
+      #endif
+      SendCandata=true;
+    }
+  }
+#endif
 
 
 void setup() {
@@ -155,27 +191,30 @@ void setup() {
 
   }
 
+    #ifdef Repeater
+    esp_now_register_recv_cb(OnDataRecv);
+    #endif
+
     // Once ESPNow is successfully Init, we will register for Send CB to
     // get the status of Trasnmitted packet
     esp_now_register_send_cb(OnDataSent);
 
-    memcpy(peerInfo.peer_addr, receiverMAC, 6);
-    peerInfo.channel = 0;  
-    peerInfo.encrypt = false;
-    
-    // Add peer        
-    if (esp_now_add_peer(&peerInfo) != ESP_OK){
-      Serial.println("Failed to add peer");
-      esp_restart();
-    }
+  memcpy(peerInfo.peer_addr, receiverMAC, 6);
+  peerInfo.channel = 0;  
+  peerInfo.encrypt = false;
+  
+  // Add peer        
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add peer");
+    esp_restart();
+  }
   }
 
 void loop() {
 
-/*
     #ifdef PorteArriere
     uint8_t compteur=0;
-    for(int i=0;i<10;i++){
+    for(int i=0;i<6;i++){
       voltage=ina260_1.readBusVoltage();
       voltage=voltage/1000;
       if(voltage>TensionSeuil){
@@ -184,8 +223,8 @@ void loop() {
       delay(5);
     }
 
-    if(compteur>5){
-      bus.PD1='1';
+    if(compteur>2){
+      trame[15]='1';
       #ifdef debug
       Serial.println("Levée de la porte arrière ON");
       #endif
@@ -193,13 +232,18 @@ void loop() {
       #ifdef debug
       Serial.println("Levée de la porte arrière OFF");
       #endif
-      bus.PD1='0';
+      trame[15]='0';
     }
 
-    if(refPD1!=bus.PD1){
-      refPD1=bus.PD1;
+  bool compare=compareArrays(refPD,trame,cSize);
+  if(!compare){
+      copyArrays(refPD,trame,cSize);
+      copyArrays(bus.Nsensor,trame,cSize);
+      #ifdef Repeater
+      esp_now_unregister_recv_cb();
+      #endif
       send=true;
-    }
+  }
     if(send){
       send=false;
       for(int i=0;i<5;i++){
@@ -211,11 +255,37 @@ void loop() {
           break;
         }
       }
+      #ifdef Repeater
+      esp_now_register_recv_cb(OnDataRecv);
+      #endif
     }
+
+
+    // Send data of can
+    #ifdef Repeater
+      if(SendCandata){
+        esp_now_unregister_recv_cb();
+        delay(100);
+        bus.V1='1';
+        for(int i=0;i<3;i++){
+          sendData();
+          delay(1500);
+          if(SendOK){
+            blinkLed(500,25);
+            break;
+          }
+        }
+        bus.V1='0';
+        SendCandata=false;
+        esp_now_register_recv_cb(OnDataRecv);
+      }
+    #endif
     delay(2000);
+
+
+
     #endif
 
-*/
 
 #ifdef FuelLV
 int comp=0;
@@ -256,4 +326,30 @@ int comp=0;
 
 #endif
 
+}
+
+
+
+void blinkLed(uint16_t time_Out,uint16_t ms){
+  previousMillis=millis();
+  while((millis()-previousMillis)<time_Out){
+    ledState = !ledState;
+    digitalWrite(Led_esp,ledState);
+    delay(ms);
+  }
+}
+
+bool compareArrays(char a[], char b[], int n){
+  for (int i=0; i<n; ++i){
+    if (a[i] != b[i]){
+        return false;
+    }
+  }
+  return true;
+}
+
+void copyArrays(char a[], char b[], int n){
+  for (int i=0; i<n; ++i){
+    a[i] = b[i];
+  }
 }
