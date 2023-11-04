@@ -23,12 +23,8 @@
 
 #define Repeater // define had la ligne fin tanabghiw nwasslo data dial la carte TracCAN b had la carte powerdetectV5
 #define debug
+// #define NiveauEau // define cette ligne ila kana ana9raw niveau d'eau dial Citerne 
 
-
-// #define WaterLv // define cette ligne ila kana ana9raw niveau d'eau dial citerne 
-// #define TEST    // test water level = -1 fix
-
-int StorageWater = 0;
 
 
 
@@ -39,9 +35,14 @@ uint8_t receiverMAC[] = {0x00, 0xAA, 0x00, 0x00, 0x33, 0x03}; // Master MAC Adre
 #ifdef Repeater
 uint8_t CanSenderMac[] = {0x00, 0xCC, 0x00, 0x00, 0x33, 0x03}; // Adress CAN ila ila definiti Repeater 24:0a:c4:08:4f:64
 #endif
+
+
+
+
+
+
+
 const char ota_resource[] = "/ARER3303/TRACPWR/firmware.bin"; // Endpoint where the firmware.bin file is stored in the OTA server
-
-
 /******************* Bosch GLM configuration ******************/
 
 // #define GLM                                        //à définir
@@ -262,11 +263,6 @@ void blinkLed(uint16_t time_Out,uint16_t ms);
   }
 #endif
 void sendData() {
-  #ifdef TEST
-  if(bus.CAN9 == -1){
-    bus.CAN9 = StorageWater;
-  }
-  #endif
   esp_now_send(receiverMAC,(uint8_t *) &bus, sizeof(bus)); // NULL means send to all peers
 }
 void OnDataSent(const uint8_t *mac, esp_now_send_status_t status) {
@@ -304,21 +300,6 @@ void setup() {
   delay(500);
   pinMode(Led_esp,OUTPUT);
 
-  #ifdef WaterLv
-
-  if (!ina260_1.begin(INA260_I2CADDR_1)){
-    #ifdef debug
-    Serial.println("Couldn't find INA260 chip 1");
-    #endif
-    esp_restart();
-  }
-  else{
-    #ifdef debug
-    Serial.println("Found INA260 chip 1");
-    #endif
-  }
-  #endif
-
 
   pinMode(Reg_Enable,OUTPUT);
   digitalWrite(Reg_Enable,LOW);
@@ -335,19 +316,19 @@ if (!SPIFFS.begin(true)){
     esp_restart();
   }
 /*****************OTA WiFi Check*************/
-Serial.println(ESP.getFlashChipSize());
-Serial.println("Checking OTA firmware 1 test..");
-if(connectWifi()){
-  if(CheckWiFiOta()){
-    Serial.println("done..");
-    // WiFi.disconnect();
-  }
-  else{
-    Serial.println("fail");
-  }
-}
-WiFi.disconnect();
-WiFi.mode(WIFI_OFF);
+// Serial.println(ESP.getFlashChipSize());
+// Serial.println("Checking OTA firmware 1 test..");
+// if(connectWifi()){
+//   if(CheckWiFiOta()){
+//     Serial.println("done..");
+//     // WiFi.disconnect();
+//   }
+//   else{
+//     Serial.println("fail");
+//   }
+// }
+// WiFi.disconnect();
+// WiFi.mode(WIFI_OFF);
 
 
  /***********************************/
@@ -414,6 +395,21 @@ WiFi.mode(WIFI_OFF);
   io_1.pinMode(CLC, INPUT); // 13
   io_1.pinMode(COM, INPUT); // 14
   io_1.pinMode(PT, INPUT);  // 15
+
+  #ifdef NiveauEau
+  if (!ina260_1.begin(INA260_I2CADDR_1)){
+    #ifdef debug
+    Serial.println("Couldn't find INA260 chip 1");
+    #endif
+    esp_restart();
+  }
+  else{
+    #ifdef debug
+    Serial.println("Found INA260 chip 1");
+    #endif
+  }
+  #endif
+
 
   // esp_task_wdt_reset();
 
@@ -542,25 +538,20 @@ float getDistance(){
 
 
 void MainTask(void *pvParameters){
-  Serial.println("Starting Main Task...");
-  uint8_t compteur=0;
 
+  delay(250);
+  Serial.println("Main Task Begin");
+  uint8_t compteur=0;
   int waterlv=0;
   int Mwaterlv=0;
-
   int comp=0;
-  
+  while(true){
 
-  while(1){
-
-  #ifdef WaterLv
-
-
+  #ifdef NiveauEau
   comp=0;
   for(int i=0;i<80;i++){
     waterlv=ina260_1.readBusVoltage();
-    // Serial.println(waterlv);
-    if(waterlv>490 && waterlv<3000){
+    if(waterlv>480 && waterlv<3100){
       Mwaterlv=Mwaterlv+waterlv;
       comp++;
     }
@@ -578,15 +569,7 @@ void MainTask(void *pvParameters){
     Mwaterlv=0;
     Serial.print("Water Lv is LOW");
   }
-
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
-
-  #ifdef TEST
-  if(Mwaterlv != 0){
-    StorageWater = Mwaterlv;
-  }
-  #endif
-
   #endif
 
 
