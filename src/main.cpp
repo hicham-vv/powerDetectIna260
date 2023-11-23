@@ -593,6 +593,31 @@ void MainTask(void *pvParameters){
     trame[0] = '0';
   }
 
+
+
+  compteur = 0;
+  for(int i = 0; i < 4; i ++){
+    voltage = io_1.digitalRead(AD);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur > 2){
+    trame[1]='1';
+    #ifdef debug
+    Serial.println("Aspirateur droite ON");
+    #endif
+  }
+  else{
+    #ifdef debug
+    Serial.println("Aspirateur droite OFF");
+    #endif
+    trame[1] = '0';
+  }
+
+
+
+
   compteur = 0;
   for(int i = 0; i < 4; i ++){
     voltage = io_1.digitalRead(BG);
@@ -613,6 +638,28 @@ void MainTask(void *pvParameters){
     trame[2] = '0';
   }
 
+
+
+  compteur = 0;
+  for(int i = 0; i < 4; i ++){
+    voltage = io_1.digitalRead(AG);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur > 2){
+    trame[3]='1';
+    #ifdef debug
+    Serial.println("Aspirateur gauche ON");
+    #endif
+  }
+  else{
+    #ifdef debug
+    Serial.println("Aspirateur gauche OFF");
+    #endif
+    trame[3] = '0';
+  }
+
   compteur = 0;
    for(int i = 0; i < 4; i ++){
     voltage = io_1.digitalRead(BC);
@@ -631,6 +678,28 @@ void MainTask(void *pvParameters){
     Serial.println("Brosse centrale OFF");
     #endif
     trame[4] = '0';
+  }
+
+
+
+  compteur = 0;
+   for(int i = 0; i < 4; i ++){
+    voltage = io_1.digitalRead(AC);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur > 2){
+    trame[5]='1';
+    #ifdef debug
+    Serial.println("Aspirateur centrale ON");
+    #endif
+  }
+  else{
+    #ifdef debug
+    Serial.println("Aspirateur centrale OFF");
+    #endif
+    trame[5] = '0';
   }
 
 
