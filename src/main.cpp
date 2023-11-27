@@ -19,11 +19,17 @@
 #include <ArduinoOTA.h>
 
 
+#define debug
 
 
 #define Repeater // define had la ligne fin tanabghiw nwasslo data dial la carte TracCAN b had la carte powerdetectV5
-#define debug
-// #define NiveauEau // define cette ligne ila kana ana9raw niveau d'eau dial Citerne 
+
+#define NiveauEau // define cette ligne ila kana ana9raw niveau d'eau dial Citerne
+
+#define Karsher // Define cette ligne pour detecter le fonctionnement du Karsher
+
+// #define DynamiqueKarsher // Define had la ligne fin ikon l karsher Dynamique, sinon  desactiviha
+
 
 
 
@@ -93,8 +99,13 @@ float compute_weight(float distance);
 #endif
 
 #define INA260_I2CADDR_1 0x44 // INA260 I2c Adress 0x44 A1=1/A0=0
+#define INA260_I2CADDR_2 0x40 // INA260 I2c Adress 0x44 A1=1/A0=0
+
+
 
 Adafruit_INA260 ina260_1 = Adafruit_INA260();
+
+Adafruit_INA260 ina260_2 = Adafruit_INA260();
 
 
 /*********************************************************/
@@ -140,7 +151,7 @@ void printPercent(uint32_t readLength, uint32_t contentLength);
   #define  LC  6   // Levée du caisson
   #define  AMA 7   // Aspirateur Manuel arrière
   #define  AP  8   // Activation de la pompe
-  #define  BA 9    //  Brosse devant  // On switch entre le pin de Aroseur devant  et la brosse devant  / mais ils ont pas les mêmes positions dans la trame 
+  #define  BA 9    // Brosse devant  // On switch entre le pin de Aroseur devant  et la brosse devant  / mais ils ont pas les mêmes positions dans la trame 
   #define  LAB 10  // Lavage Bac
   #define  VES 11  // Vidade Eau sale
   #define  OPA 12  // Ouverture porte arriere
@@ -409,6 +420,19 @@ if (!SPIFFS.begin(true)){
     #endif
   }
   #endif
+  #ifdef Karsher
+  if(!ina260_2.begin(INA260_I2CADDR_2)){
+    #ifdef debug
+    Serial.println("Couldn't find INA260 chip 2");
+    #endif
+    esp_restart();
+  }
+  else{
+    #ifdef debug
+    Serial.println("Found INA260 chip 2");
+    #endif
+  }
+  #endif
 
 
   // esp_task_wdt_reset();
@@ -542,12 +566,14 @@ void MainTask(void *pvParameters){
   delay(250);
   Serial.println("Main Task Begin");
   uint8_t compteur=0;
-  int waterlv=0;
   int Mwaterlv=0;
   int comp=0;
+  int karsher=0;
+  int Mkarsher=0;
   while(true){
 
   #ifdef NiveauEau
+  int waterlv=0;
   comp=0;
   for(int i=0;i<80;i++){
     waterlv=ina260_1.readBusVoltage();
@@ -572,6 +598,91 @@ void MainTask(void *pvParameters){
   Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
   #endif
 
+  
+  #ifdef Karsher
+    comp=1;
+    for(int i=0;i<25;i++){
+      karsher=ina260_2.readBusVoltage();
+      Mkarsher=Mkarsher+karsher;
+      // Serial.println(karsher);
+      comp++;
+      delay(10);
+    }
+
+  Mkarsher=Mkarsher/comp;
+  Serial.print("Mkarsher=");
+  Serial.println(Mkarsher);
+
+  #ifdef  DynamiqueKarsher
+  if(Mkarsher<700){
+    Serial.println("Karsher OFF");
+    trame[20]='0';
+    MkarsherPrec=Mkarsher;
+  }else{
+    int16_t deltaMean=Mkarsher-MkarsherPrec;
+    Serial.println(deltaMean);
+    if(deltaMean<-100){
+      Serial.println("Karsher ON");
+      trame[20]='1';
+    }else{
+      MkarsherPrec=Mkarsher;
+      Serial.println("Karsher OFF");
+      trame[20]='0';
+    }
+  }
+  #else
+    if(Mkarsher>700){
+    Serial.println("Karsher ON");
+    trame[20]='1';
+    }
+    if(Mkarsher<=700){
+      Serial.println("Karsher OFF");
+      trame[20]='0';
+    }
+  #endif
+  #endif
+
+
+
+  compteur = 0;
+  for(int i = 0; i < 4; i ++){
+    voltage = io_1.digitalRead(LAB);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur > 2){
+    trame[13]='1';
+    #ifdef debug
+    Serial.println("Lavage Bac ON");
+    #endif
+  }
+  else{
+    #ifdef debug
+    Serial.println("Lavage Bac OFF");
+    #endif
+    trame[13] = '0';
+  }
+
+  compteur = 0;
+  for(int i = 0; i < 4; i ++){
+    voltage = io_1.digitalRead(VES);
+    if(!voltage){
+      compteur++;
+    }
+  }
+  if(compteur > 2){
+    trame[14]='1';
+    #ifdef debug
+    Serial.println("Vidage d'eau Sale ON");
+    #endif
+  }
+  else{
+    #ifdef debug
+    Serial.println("Vidage d'eau Sale OFF");
+    #endif
+    trame[14]='0';
+  }
 
   compteur = 0;
   for(int i = 0; i < 4; i ++){
