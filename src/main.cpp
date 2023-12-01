@@ -419,6 +419,7 @@ if (!SPIFFS.begin(true)){
     Serial.println("Found INA260 chip 1");
     #endif
   }
+  delay(250);
   #endif
   #ifdef Karsher
   if(!ina260_2.begin(INA260_I2CADDR_2)){
@@ -432,6 +433,7 @@ if (!SPIFFS.begin(true)){
     Serial.println("Found INA260 chip 2");
     #endif
   }
+  delay(250);
   #endif
 
 
@@ -563,7 +565,7 @@ float getDistance(){
 
 void MainTask(void *pvParameters){
 
-  delay(250);
+  delay(500);
   Serial.println("Main Task Begin");
   uint8_t compteur=0;
   int Mwaterlv=0;
@@ -572,75 +574,7 @@ void MainTask(void *pvParameters){
   int Mkarsher=0;
   while(true){
 
-  #ifdef NiveauEau
-  int waterlv=0;
-  comp=0;
-  for(int i=0;i<80;i++){
-    waterlv=ina260_1.readBusVoltage();
-    if(waterlv>480 && waterlv<3100){
-      Mwaterlv=Mwaterlv+waterlv;
-      comp++;
-    }
-    delay(10);
-  }
-  if(comp!=0){
-    Mwaterlv=Mwaterlv/comp;
-  }else{
-    Mwaterlv=0;
-  }
-  if(Mwaterlv>=500){
-  Mwaterlv=Mwaterlv-500;
-    Mwaterlv=Mwaterlv/0.8;
-  }else{
-    Mwaterlv=0;
-    Serial.print("Water Lv is LOW");
-  }
-  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
-  #endif
 
-  
-  #ifdef Karsher
-    comp=1;
-    for(int i=0;i<25;i++){
-      karsher=ina260_2.readBusVoltage();
-      Mkarsher=Mkarsher+karsher;
-      // Serial.println(karsher);
-      comp++;
-      delay(10);
-    }
-
-  Mkarsher=Mkarsher/comp;
-  Serial.print("Mkarsher=");
-  Serial.println(Mkarsher);
-
-  #ifdef  DynamiqueKarsher
-  if(Mkarsher<700){
-    Serial.println("Karsher OFF");
-    trame[20]='0';
-    MkarsherPrec=Mkarsher;
-  }else{
-    int16_t deltaMean=Mkarsher-MkarsherPrec;
-    Serial.println(deltaMean);
-    if(deltaMean<-100){
-      Serial.println("Karsher ON");
-      trame[20]='1';
-    }else{
-      MkarsherPrec=Mkarsher;
-      Serial.println("Karsher OFF");
-      trame[20]='0';
-    }
-  }
-  #else
-    if(Mkarsher>700){
-    Serial.println("Karsher ON");
-    trame[20]='1';
-    }
-    if(Mkarsher<=700){
-      Serial.println("Karsher OFF");
-      trame[20]='0';
-    }
-  #endif
-  #endif
 
 
 
@@ -931,6 +865,80 @@ void MainTask(void *pvParameters){
     Serial.println("Compactation OFF\n");
     #endif
   }
+
+
+  #ifdef NiveauEau
+  int waterlv=0;
+  comp=0;
+  for(int i=0;i<80;i++){
+    waterlv=ina260_1.readBusVoltage();
+    // Serial.println(waterlv);
+    if(waterlv>490 && waterlv<3100){
+      Mwaterlv=Mwaterlv+waterlv;
+      comp++;
+    }
+    delay(10);
+  }
+  if(comp!=0){
+    Mwaterlv=Mwaterlv/comp;
+  }else{
+    Mwaterlv=0;
+  }
+  if(Mwaterlv>=500){
+  Mwaterlv=Mwaterlv-500;
+    Mwaterlv=Mwaterlv/0.8;
+  }else{
+    Mwaterlv=0;
+    Serial.print("Water Lv is LOW");
+  }
+  Serial.print("Moyenne en mm=");Serial.println(Mwaterlv);
+  bus.CAN9=Mwaterlv;
+  #endif
+
+  
+  #ifdef Karsher
+    comp=1;
+    for(int i=0;i<30;i++){
+      karsher=ina260_2.readBusVoltage();
+      Mkarsher=Mkarsher+karsher;
+      // Serial.println(karsher);
+      comp++;
+      delay(10);
+    }
+
+  Mkarsher=Mkarsher/comp;
+  Serial.print("Mkarsher=");
+  Serial.println(Mkarsher);
+
+  #ifdef  DynamiqueKarsher
+  if(Mkarsher<700){
+    Serial.println("Karsher OFF");
+    trame[20]='0';
+    MkarsherPrec=Mkarsher;
+  }else{
+    int16_t deltaMean=Mkarsher-MkarsherPrec;
+    Serial.println(deltaMean);
+    if(deltaMean<-100){
+      Serial.println("Karsher ON");
+      trame[20]='1';
+    }else{
+      MkarsherPrec=Mkarsher;
+      Serial.println("Karsher OFF");
+      trame[20]='0';
+    }
+  }
+  #else
+    if(Mkarsher>700){
+    Serial.println("Karsher ON");
+    trame[20]='1';
+    }
+    if(Mkarsher<=700){
+      Serial.println("Karsher OFF");
+      trame[20]='0';
+    }
+  #endif
+  #endif
+
 
 
   int deltaLv;
