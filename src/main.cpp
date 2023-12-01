@@ -28,7 +28,7 @@
 
 #define Karsher // Define cette ligne pour detecter le fonctionnement du Karsher
 
-// #define DynamiqueKarsher // Define had la ligne fin ikon l karsher Dynamique, sinon  desactiviha
+#define DynamiqueKarsher // Define had la ligne fin ikon l karsher Dynamique, sinon  desactiviha
 
 
 
