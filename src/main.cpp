@@ -207,6 +207,9 @@ typedef struct message {
 message bus; // créer une structure message nommé bus
 
 
+
+int MkarsherPrec=0;
+
 bool voltage=false;
 char refPD[cSize+1]= {'0','0','0','0','0','0','0','0',
                       '0','0','0','0','0','0','0','0',
